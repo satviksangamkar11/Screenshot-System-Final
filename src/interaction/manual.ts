@@ -137,11 +137,15 @@ export async function runManualStep(
     // Restart the live view for the retry
     await remote?.start();
 
-    // Reactivate the control exactly once — operator can correct their input
-    const retryAction = await gate.activate(control.dedupeKey);
-
-    await remote?.stop();
-    await unhighlight(ctx.page);
+    let retryAction: 'submit' | 'skip';
+    try {
+      // Reactivate the control exactly once — operator can correct their input
+      retryAction = await gate.activate(control.dedupeKey);
+    } finally {
+      // Ensure remote always stops, even if reactivation fails
+      await remote?.stop();
+      await unhighlight(ctx.page);
+    }
 
     if (retryAction === 'skip') {
       gate.setItemStatus(control.dedupeKey, 'skipped');
