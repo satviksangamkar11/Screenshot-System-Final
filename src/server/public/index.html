@@ -714,6 +714,7 @@
     const x = Math.round((e.clientX - rect.left) * scaleX);
     const y = Math.round((e.clientY - rect.top) * scaleY);
     sendInput({ type: 'click', x, y });
+    els.manualTextInput.focus();
   });
 
   // A small fixed set of forwarded keys for keyboard-driven UI (closing
