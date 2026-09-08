@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SAP GUI for HTML</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #d4d0c8; color: #000; font-size: 13px; }
+  header { background: #003c78; color: #fff; padding: 8px 16px; font-size: 14px; }
+  .toolbar { background: #ece9d8; border-bottom: 1px solid #999; padding: 6px 10px; }
+  .urBtnIco { border: 1px solid #999; background: #f0f0f0 url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22%3E%3Crect width=%2216%22 height=%2216%22 fill=%22%23336%22/%3E%3C/svg%3E') center/12px no-repeat; width: 26px; height: 24px; cursor: pointer; padding: 0; }
+  h2 { margin: 0; padding: 10px 16px; background: #fff; border-bottom: 1px solid #999; font-size: 15px; }
+  fieldset { background: #fff; margin: 10px; padding: 14px; border: 1px solid #999; }
+  legend { font-weight: bold; color: #003c78; padding: 0 4px; }
+  .row { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; align-items: center; margin-bottom: 8px; max-width: 480px; }
+  label { text-align: right; }
+  input, select { padding: 3px 5px; border: 1px inset #999; font-size: 13px; width: 100%; box-sizing: border-box; }
+  input[readonly] { background: #ece9d8; color: #555; }
+  .wg-wrap { display: flex; gap: 3px; align-items: center; }
+  .wg-wrap input { flex: 1; }
+  [role="tab"] { display: inline-block; padding: 6px 14px; border: 1px solid #999; border-bottom: none; background: #ece9d8; cursor: pointer; }
+  [role="tab"][aria-selected="true"] { background: #fff; font-weight: bold; }
+  [role="dialog"] { border: 1px solid #666; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 8px; background: #fff; }
+  [role="dialog"] table { border-collapse: collapse; font-size: 13px; }
+  [role="dialog"] td { padding: 5px 9px; border-bottom: 1px solid #eee; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>SAP GUI for HTML — ITS WebGUI</header>
+
+<div class="toolbar">
+  <button type="button" id="M0:0080:B" class="urBtnIco" title="Save"></button>
+</div>
+
+<div role="tab" aria-selected="true" id="M0:0070:T" class="urTab">Details</div>
+
+<h2>User Master Record</h2>
+
+<fieldset>
+<legend>General Data</legend>
+
+<div class="row">
+  <label for="M0:0010:I">User Name</label>
+  <input id="M0:0010:I" name="RSYST-BNAME" type="text" class="urEdf2TxtEnbl">
+</div>
+
+<div class="row">
+  <label for="M0:0020:W">Company Code</label>
+  <span id="M0:0020:W" name="BUKRS" class="urEdf2TxtEnbl wg-wrap">
+    <input id="M0:0020:W-inner" type="text">
+    <button type="button" id="M0:0020:W-f4" class="urF4 sapMInputValHelp" title="Possible Entries" aria-label="Possible Entries">⧉</button>
+  </span>
+</div>
+
+<div class="row">
+  <label for="M0:0030:S">Country</label>
+  <select id="M0:0030:S" name="LAND1" class="urCbo">
+    <option value="">Select...</option>
+    <option value="US">United States</option>
+    <option value="DE">Germany</option>
+    <option value="IN">India</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="M0:0040:C">Active</label>
+  <input id="M0:0040:C" name="XACTIVE" type="checkbox" class="urChk">
+</div>
+
+<div class="row">
+  <label for="M0:0050:R">Priority</label>
+  <input id="M0:0050:R" name="PRIO" type="radio" value="H" class="urRad">
+</div>
+
+<div class="row">
+  <label for="M0:0060:I">Document No.</label>
+  <input id="M0:0060:I" name="BELNR" type="text" class="urEdf2TxtDsbl" value="1000000042" readonly>
+</div>
+
+</fieldset>
+
+<fieldset>
+<legend>Contact Persons</legend>
+
+<table class="wg-repeat">
+<thead>
+<tr><th>.</th><th>Function</th><th>Name</th><th>Phone</th><th></th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><label for="M0:0100:I">Partner Function</label></td>
+  <td><input id="M0:0100:I" name="PARVW(01)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><label for="M0:0101:I">Name</label><input id="M0:0101:I" name="PARNR(01)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><label for="M0:0102:I">Phone</label><input id="M0:0102:I" name="TELNR(01)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><button type="button" id="M0:0103:B" class="urBtnIco" title="X" aria-label="Remove row"></button></td>
+</tr>
+<tr>
+  <td><label for="M0:0110:I">Partner Function</label></td>
+  <td><input id="M0:0110:I" name="PARVW(02)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><label for="M0:0111:I">Name</label><input id="M0:0111:I" name="PARNR(02)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><label for="M0:0112:I">Phone</label><input id="M0:0112:I" name="TELNR(02)" type="text" class="urEdf2TxtEnbl"></td>
+  <td><button type="button" id="M0:0113:B" class="urBtnIco" title="X" aria-label="Remove row"></button></td>
+</tr>
+</tbody>
+</table>
+
+</fieldset>
+
+<fieldset>
+<legend>Additional Settings</legend>
+
+<div class="row">
+  <label for="M0:0120:S">Region</label>
+  <select id="M0:0120:S" name="REGIO" class="urCbo">
+    <option value="">Select...</option>
+    <option value="NA">North America</option>
+    <option value="EU">Europe</option>
+    <option value="AP">Asia Pacific</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="M0:0130:D">Valid From</label>
+  <span id="M0:0130:D" name="DATAB" class="urEdf2TxtEnbl wg-wrap">
+    <input id="M0:0130:D-inner" type="text" placeholder="MM/DD/YYYY">
+    <button type="button" id="M0:0130:D-f4" class="urF4 sapUiIcon" title="Open Calendar" aria-label="Open Calendar">📅</button>
+  </span>
+</div>
+
+<div class="row">
+  <label for="M0:0140:C">Notify by Email</label>
+  <input id="M0:0140:C" name="XNOTIFY" type="checkbox" class="urChk">
+</div>
+
+</fieldset>
+
+<div class="toolbar">
+  <button type="button" id="M0:0150:B" class="urBtnIco" title="Add Row" aria-label="Add Row"></button>
+  <button type="button" id="M0:0160:B" class="urBtnIco" title="Cancel" aria-label="Cancel"></button>
+</div>
+
+<script>
+'use strict';
+
+function removeOverlay(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+/* Possible-entries (F4) dialog for Company Code */
+document.querySelector('#M0\\:0020\\:W .urF4').addEventListener('click', function () {
+  var dialogId = 'wg-f4-dialog';
+  if (document.getElementById(dialogId)) { removeOverlay(dialogId); return; }
+
+  var dialog = document.createElement('div');
+  dialog.id = dialogId;
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-label', 'Possible Entries: Company Code');
+  dialog.style.cssText = 'position:fixed;top:130px;left:130px;z-index:9999;min-width:260px;';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-weight:bold;margin-bottom:8px;font-size:13px';
+  title.textContent = 'Possible Entries: Company Code';
+  dialog.appendChild(title);
+
+  var table = document.createElement('table');
+  var tbody = document.createElement('tbody');
+  [['1000', 'ACME Corp'], ['2000', 'Globex Inc'], ['3000', 'Initech LLC']].forEach(function (row) {
+    var tr = document.createElement('tr');
+    var td1 = document.createElement('td');
+    td1.textContent = row[0];
+    var td2 = document.createElement('td');
+    td2.textContent = row[1];
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.addEventListener('click', function () {
+      var wrap = document.getElementById('M0:0020:W');
+      var input = wrap.querySelector('input');
+      input.value = row[0];
+      removeOverlay(dialogId);
+      document.removeEventListener('keydown', escHandler);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  dialog.appendChild(table);
+
+  document.body.appendChild(dialog);
+
+  var escHandler = function (e) {
+    if (e.key === 'Escape') {
+      removeOverlay(dialogId);
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+});
+</script>
+</body>
+</html>

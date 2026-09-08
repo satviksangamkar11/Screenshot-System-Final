@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI5 ID Churn Test</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .grid { display: grid; grid-template-columns: 180px 1fr; gap: 12px; align-items: center; max-width: 520px; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px; font-size: 13px; width: 100%; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<h2>UI5 ID Churn Test</h2>
+<div class="panel"><div class="grid" id="form"></div></div>
+
+<script>
+  /*
+   * Reproduces SAP UI5's auto-generated view-id numbering. A view without an
+   * explicit id gets "__xmlview<N>--" from a global counter, so the same field
+   * is "__xmlview2--DueDateId-inner" on one render and
+   * "__xmlview3--DueDateId-inner" after the view is re-instantiated. Any
+   * selector captured against the first id then matches nothing, even though
+   * the field is plainly on screen.
+   *
+   * Field ids here are taken verbatim from the real application's DOM.
+   */
+  let viewCounter = 2;
+
+  const FIELDS = [
+    { id: 'DueDateId',    label: 'Due Date' },
+    { id: 'TxnStartId',   label: 'Transaction Start Date' },
+    { id: 'SalesOrgId',   label: 'Sales Organization' },
+    { id: 'ReasonId',     label: 'Reason for Request' },
+  ];
+
+  function render() {
+    const prefix = '__xmlview' + viewCounter + '--';
+    document.getElementById('form').innerHTML = FIELDS.map((f) => {
+      const inputId = prefix + f.id + '-inner';
+      return '<label for="' + inputId + '">' + f.label + ':</label>' +
+             '<div id="' + prefix + f.id + '"><input id="' + inputId + '" type="text"></div>';
+    }).join('');
+  }
+
+  render();
+
+  /*
+   * Re-instantiate the view repeatedly, renumbering every field id each time.
+   * A single re-render before discovery would prove nothing — the churn has to
+   * land *between* a control being discovered and being interacted with, which
+   * is exactly when the real failure occurred.
+   *
+   * Values already entered are preserved across the re-render, so a field that
+   * was filled before a renumber still shows its value; only the ids change.
+   */
+  setInterval(() => {
+    const previous = {};
+    document.querySelectorAll('#form input').forEach((el) => {
+      const key = el.id.replace(/^__xmlview\d+--/, '');
+      previous[key] = el.value;
+    });
+
+    viewCounter++;
+    render();
+
+    document.querySelectorAll('#form input').forEach((el) => {
+      const key = el.id.replace(/^__xmlview\d+--/, '');
+      if (previous[key]) el.value = previous[key];
+    });
+  }, 1500);
+</script>
+</body>
+</html>

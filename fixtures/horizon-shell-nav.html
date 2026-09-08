@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Horizon Shell Side-Navigation Fixture</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; }
+  #shell-header { background: #354a5f; color: #fff; padding: 10px 16px; display: flex; gap: 12px; align-items: center; }
+  #shell-header input { padding: 4px; }
+  .sapUshellNavigationMenu {
+    border: 1px solid #ccc; padding: 8px; margin: 0; max-width: 320px;
+    display: flex; flex-direction: column; gap: 2px; background: #f7f7f7;
+  }
+  .sapUshellNavigationMenu [role="tab"] { padding: 5px 8px; cursor: pointer; }
+  main { padding: 20px; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 10px; max-width: 560px; }
+</style>
+</head>
+<body>
+
+<!-- Shell bar: already excluded by the original #shell-header guard. -->
+<div id="shell-header">
+  <button id="homeBtn">Home</button>
+  <input id="dummySearchInput" type="text" placeholder="Search">
+  <button id="notifBtn">Notifications</button>
+</div>
+
+<!--
+  Horizon side-navigation menu. In the real launchpad this renders into UI5's
+  static area, OUTSIDE #shell-header -- which is exactly why a header-only
+  guard misses it. Every entry navigates into a different application.
+-->
+<div class="sapUshellNavigationMenu" id="sideNav">
+  <div role="tab" id="__header0-0">My Home</div>
+  <div role="tab" id="__header0-2">SAP Fiori Launchpad</div>
+  <div role="tab" id="__header0-3">CAMs Reports</div>
+  <div role="tab" id="__header0-6">DME</div>
+  <div role="tab" id="__header0-8">FS Senden Master Data</div>
+  <div role="tab" id="__header0-17">MIGO</div>
+  <div role="tab" id="__header0-29">Work Order Admin</div>
+  <div role="tab" id="header-overflow">More</div>
+</div>
+
+<main>
+  <h2>Request Supplier Extended</h2>
+
+  <!-- The application's own tabs: these MUST still be explored. -->
+  <div role="tablist" id="appTabs">
+    <div role="tab" id="create" aria-selected="true" data-target="formPanel">Form</div>
+    <div role="tab" id="CopyTab" aria-selected="false" data-target="copyPanel">Copy</div>
+  </div>
+
+  <div id="formPanel">
+    <section>
+      <h3>General</h3>
+      <div class="grid">
+        <label for="BPGrpId">BP Group:</label>
+        <select id="BPGrpId"><option value="">Select</option><option>ZDRB</option></select>
+
+        <label for="DueDateId">Due date:</label>
+        <input id="DueDateId" type="date">
+
+        <label for="Address">Address:</label>
+        <input id="Address" type="text" disabled>
+      </div>
+    </section>
+  </div>
+
+  <div id="copyPanel" style="display:none">
+    <section>
+      <h3>Standard</h3>
+      <div class="grid">
+        <label for="PaymentCycle">Payment Cycle:</label>
+        <select id="PaymentCycle"><option value="">Select</option><option>Monthly</option></select>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  // Side-nav entries would navigate away from the application entirely.
+  document.querySelectorAll('.sapUshellNavigationMenu [role="tab"]').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.body.innerHTML =
+        '<h1 id="leftApp">LEFT THE APPLICATION — opened ' + el.textContent + '</h1>';
+    });
+  });
+
+  document.querySelectorAll('#appTabs [role="tab"]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#appTabs [role="tab"]').forEach((t) => t.setAttribute('aria-selected', 'false'));
+      tab.setAttribute('aria-selected', 'true');
+      document.getElementById('formPanel').style.display = tab.id === 'create' ? '' : 'none';
+      document.getElementById('copyPanel').style.display = tab.id === 'CopyTab' ? '' : 'none';
+    });
+  });
+</script>
+</body>
+</html>

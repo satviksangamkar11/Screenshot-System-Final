@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Web Dynpro ABAP Form</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f0f0f0; color: #000; }
+  header { background: #003366; color: #fff; padding: 10px 16px; font-size: 15px; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #d0d0d0; font-size: 17px; }
+  fieldset { background: #fff; margin: 12px; padding: 16px; border: 1px solid #d0d0d0; }
+  legend { font-size: 14px; font-weight: bold; color: #003366; padding: 0 4px; }
+  .row { display: grid; grid-template-columns: 180px 1fr; gap: 8px 10px; align-items: center; margin-bottom: 10px; max-width: 560px; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 5px 7px; border: 1px solid #999; font-size: 13px; width: 100%; box-sizing: border-box; }
+  input[readonly] { background: #eee; color: #666; }
+  .wd-wrap { display: flex; gap: 4px; align-items: center; }
+  .wd-wrap input { flex: 1; }
+  button.wd-icon { border: 1px solid #999; background: #f5f5f5; cursor: pointer; padding: 0 8px; font-size: 13px; }
+  .actions { padding: 12px 16px; text-align: right; }
+  button.wd-save { background: #003366; color: #fff; border: none; padding: 8px 20px; cursor: pointer; font-size: 13px; }
+  [role="tab"] { display: inline-block; padding: 8px 16px; border: 1px solid #d0d0d0; border-bottom: none; background: #eee; font-size: 13px; cursor: pointer; }
+  [role="tab"][aria-selected="true"] { background: #fff; font-weight: bold; }
+  [role="dialog"] { border: 1px solid #999; box-shadow: 0 4px 16px rgba(0,0,0,.25); padding: 10px; background: #fff; }
+  [role="dialog"] table { border-collapse: collapse; font-size: 13px; }
+  [role="dialog"] td { padding: 6px 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>Web Dynpro ABAP — Lightspeed</header>
+
+<div role="tab" aria-selected="true" id="WD09"
+     lsdata="['Tab','WD09','Details','','X','X','','','','']">Details</div>
+
+<h2>Sample Component</h2>
+
+<fieldset>
+<legend>Master Data</legend>
+
+<div class="row">
+  <label for="WD01">First Name</label>
+  <input id="WD01" type="text"
+         lsdata="['InputField','WD01','','','X','X','','X','','']">
+</div>
+
+<div class="row">
+  <label for="WD02">Country</label>
+  <select id="WD02" lsdata="['DropDownByKey','WD02','','','X','X','','','','']">
+    <option value="">Select...</option>
+    <option value="US">United States</option>
+    <option value="DE">Germany</option>
+    <option value="IN">India</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="WD03">Company Code</label>
+  <span id="WD03" class="wd-wrap"
+        lsdata="['InputField','WD03','','','X','X','','','','X']">
+    <input id="WD03-inner" type="text">
+    <button type="button" id="WD03-vhb" class="wd-icon sapMInputValHelp" aria-label="Value Help">⧉</button>
+  </span>
+</div>
+
+<div class="row">
+  <label for="WD04">Start Date</label>
+  <span id="WD04" class="wd-wrap"
+        lsdata="['InputField','WD04','','','X','X','','','DATE','']">
+    <input id="WD04-inner" type="text" placeholder="MM/DD/YYYY">
+    <button type="button" id="WD04-fbtn" class="wd-icon sapUiIcon" aria-label="Open Calendar">📅</button>
+  </span>
+</div>
+
+<div class="row">
+  <label for="WD05">Subscribe to Newsletter</label>
+  <input id="WD05" type="checkbox"
+         lsdata="['CheckBox','WD05','','','X','X','','','','']">
+</div>
+
+<div class="row">
+  <label for="WD06">Preferred Contact</label>
+  <input id="WD06" type="radio" name="contact-method"
+         lsdata="['RadioButton','WD06','','','X','X','','','','']">
+</div>
+
+<div class="row">
+  <label for="WD07">Attachment</label>
+  <input id="WD07" type="file"
+         lsdata="['FileUpload','WD07','','','X','X','','','','']">
+</div>
+
+<div class="row">
+  <label for="WD10">Record ID</label>
+  <input id="WD10" type="text" value="REC-00042" readonly
+         lsdata="['InputField','WD10','','REC-00042','','X','X','','','']">
+</div>
+
+</fieldset>
+
+<fieldset>
+<legend>Contact Persons</legend>
+
+<table class="wd-repeat">
+<thead>
+<tr><th>.</th><th>Function</th><th>Name</th><th>Phone</th><th></th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><label for="WD20">Partner Function</label></td>
+  <td><input id="WD20" type="text" lsdata="['InputField','WD20','','','X','X','','','','']"></td>
+  <td><label for="WD21">Name</label><input id="WD21" type="text" lsdata="['InputField','WD21','','','X','X','','','','']"></td>
+  <td><label for="WD22">Phone</label><input id="WD22" type="text" lsdata="['InputField','WD22','','','X','X','','','','']"></td>
+  <td><button type="button" id="WD23" class="wd-icon" aria-label="Remove row" lsdata="['Button','WD23','','','X','X','','','','']">X</button></td>
+</tr>
+<tr>
+  <td><label for="WD24">Partner Function</label></td>
+  <td><input id="WD24" type="text" lsdata="['InputField','WD24','','','X','X','','','','']"></td>
+  <td><label for="WD25">Name</label><input id="WD25" type="text" lsdata="['InputField','WD25','','','X','X','','','','']"></td>
+  <td><label for="WD26">Phone</label><input id="WD26" type="text" lsdata="['InputField','WD26','','','X','X','','','','']"></td>
+  <td><button type="button" id="WD27" class="wd-icon" aria-label="Remove row" lsdata="['Button','WD27','','','X','X','','','','']">X</button></td>
+</tr>
+</tbody>
+</table>
+
+</fieldset>
+
+<fieldset>
+<legend>Additional Settings</legend>
+
+<div class="row">
+  <label for="WD11">Region</label>
+  <select id="WD11" lsdata="['DropDownByKey','WD11','','','X','X','','','','']">
+    <option value="">Select...</option>
+    <option value="NA">North America</option>
+    <option value="EU">Europe</option>
+    <option value="AP">Asia Pacific</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="WD12">Valid From</label>
+  <span id="WD12" class="wd-wrap"
+        lsdata="['InputField','WD12','','','X','X','','','DATE','']">
+    <input id="WD12-inner" type="text" placeholder="MM/DD/YYYY">
+    <button type="button" id="WD12-fbtn" class="wd-icon sapUiIcon" aria-label="Open Calendar">📅</button>
+  </span>
+</div>
+
+<div class="row">
+  <label for="WD13">Notify by Email</label>
+  <input id="WD13" type="checkbox"
+         lsdata="['CheckBox','WD13','','','X','X','','','','']">
+</div>
+
+</fieldset>
+
+<div class="actions">
+  <button type="button" id="WD08" class="wd-save"
+          lsdata="['Button','WD08','','','X','X','','','','']">Save</button>
+  <button type="button" id="WD14" class="wd-icon"
+          lsdata="['Button','WD14','','','X','X','','','','']">Cancel</button>
+</div>
+
+<script>
+'use strict';
+
+function removeOverlay(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+/* Value-help dialog for Company Code (WD03) */
+document.getElementById('WD03-vhb').addEventListener('click', function () {
+  var dialogId = 'wd-vh-dialog';
+  if (document.getElementById(dialogId)) { removeOverlay(dialogId); return; }
+
+  var dialog = document.createElement('div');
+  dialog.id = dialogId;
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-label', 'Company Code search help');
+  dialog.style.cssText =
+    'position:fixed;top:120px;left:120px;z-index:9999;min-width:260px;';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-weight:bold;margin-bottom:8px;font-size:13px';
+  title.textContent = 'Search Help: Company Code';
+  dialog.appendChild(title);
+
+  var table = document.createElement('table');
+  var tbody = document.createElement('tbody');
+  [['ACME', 'ACME Corp'], ['GLOB', 'Globex Inc'], ['INIT', 'Initech LLC']].forEach(function (row) {
+    var tr = document.createElement('tr');
+    var td1 = document.createElement('td');
+    td1.textContent = row[0];
+    var td2 = document.createElement('td');
+    td2.textContent = row[1];
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.addEventListener('click', function () {
+      var wrap = document.getElementById('WD03');
+      var input = wrap.querySelector('input');
+      input.value = row[0];
+      removeOverlay(dialogId);
+      document.removeEventListener('keydown', escHandler);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  dialog.appendChild(table);
+
+  document.body.appendChild(dialog);
+
+  var escHandler = function (e) {
+    if (e.key === 'Escape') {
+      removeOverlay(dialogId);
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+});
+
+/* Calendar for Start Date (WD04) — same convention the engine already
+   drives for date pickers elsewhere: .sapUiCalItem[data-sap-day]. */
+document.getElementById('WD04-fbtn').addEventListener('click', function () {
+  var dialogId = 'wd-calendar-dialog';
+  if (document.getElementById(dialogId)) { removeOverlay(dialogId); return; }
+
+  var dialog = document.createElement('div');
+  dialog.id = dialogId;
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-label', 'Start Date calendar');
+  dialog.style.cssText = 'position:fixed;top:120px;left:120px;z-index:9999;min-width:230px;';
+
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var today = now.getDate();
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var mm = String(month + 1).padStart(2, '0');
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:13px;font-weight:600;margin-bottom:6px;text-align:center';
+  hdr.textContent = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+  dialog.appendChild(hdr);
+
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,30px);gap:2px';
+
+  var wrap = document.getElementById('WD04');
+  var input = wrap.querySelector('input');
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    (function (d) {
+      var dd = String(d).padStart(2, '0');
+      var cell = document.createElement('div');
+      cell.className = 'sapUiCalItem' + (d === today ? ' sapUiCalItemNow' : '');
+      cell.setAttribute('data-sap-day', '' + year + mm + dd);
+      cell.textContent = String(d);
+      cell.style.cssText =
+        'padding:5px 2px;text-align:center;cursor:pointer;border-radius:3px;font-size:12px';
+      if (d === today) {
+        cell.style.fontWeight = '600';
+        cell.style.border = '1px solid #003366';
+      }
+      cell.addEventListener('click', function () {
+        input.value = mm + '/' + dd + '/' + year;
+        removeOverlay(dialogId);
+        document.removeEventListener('keydown', escHandler);
+      });
+      grid.appendChild(cell);
+    })(d);
+  }
+  dialog.appendChild(grid);
+  document.body.appendChild(dialog);
+
+  var escHandler = function (e) {
+    if (e.key === 'Escape') {
+      removeOverlay(dialogId);
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+});
+</script>
+</body>
+</html>

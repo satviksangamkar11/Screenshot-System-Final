@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI5 Lookup Button Regression Fixture</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  .sapUiFormElement { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .sapMLabel { width: 140px; }
+  input { padding: 6px; }
+  .lookup-btn { width: 28px; height: 28px; cursor: pointer; }
+  dialog { border: none; box-shadow: 0 8px 32px rgba(0,0,0,.3); padding: 16px; width: 360px; }
+</style>
+</head>
+<body>
+<h2>FS Senden Master Data (synthetic UI5 fixture)</h2>
+
+<div class="sapUiFormElement">
+  <span class="sapMLabel" id="companyCodeLabel">Company Code:</span>
+  <input id="companyCodeInput" type="text">
+  <!-- Icon-only match-code button: no text, no aria-label, no UI5 label
+       association -- the exact shape of the "Company Code" lookup trigger
+       from the bug report. -->
+  <button id="companyCodeLookup" class="lookup-btn">&#x29c9;</button>
+  <button id="searchButton">Search</button>
+</div>
+
+<div class="sapUiFormElement">
+  <span class="sapMLabel" id="taxDecLabel">Consumption tax Decimal:</span>
+  <div id="taxDecSelect" role="combobox" tabindex="0" style="border:1px solid #888; padding:6px; width:140px; display:inline-block;">
+    <span id="taxDecSelect-arrow" class="sapMSltArrow">&#x25be;</span>
+  </div>
+  <div id="taxDecSelect-list" style="display:none; border:1px solid #888; margin-top:4px;">
+    <ul class="sapMSelectList">
+      <li>Round Off</li>
+      <li>Round Up</li>
+      <li>Round Down</li>
+    </ul>
+  </div>
+</div>
+
+<dialog id="lookupDialog">
+  <h4>Company Code</h4>
+  <input placeholder="Search">
+  <p>No data found</p>
+  <button onclick="document.getElementById('lookupDialog').close()">Close</button>
+</dialog>
+
+<script>
+  document.getElementById('companyCodeLookup').addEventListener('click', () => {
+    document.getElementById('lookupDialog').showModal();
+  });
+  document.getElementById('taxDecSelect').addEventListener('click', () => {
+    document.getElementById('taxDecSelect-list').style.display = 'block';
+  });
+
+  // Minimal fake UI5 runtime: just enough of sap.ui.core.Element.registry for
+  // the discovery probe to enumerate two controls -- a labelled Input, and an
+  // icon-only Button beside it with NO label association and NO getText(),
+  // reproducing the "Company Code lookup never gets clicked" bug shape.
+  function makeControl(id, type, opts) {
+    opts = opts || {};
+    return {
+      getId: () => id,
+      getMetadata: () => ({ getName: () => 'sap.m.' + type }),
+      getDomRef: () => document.getElementById(id),
+      getVisible: () => true,
+      getEnabled: () => true,
+      getEditable: () => true,
+      getRequired: () => false,
+      getShowValueHelp: () => false,
+      getLabels: () => opts.labels || [],
+      getAriaLabelledBy: () => [],
+      getText: () => opts.text || '',
+      getTitle: () => '',
+      getHeaderText: () => '',
+      getParent: () => null,
+    };
+  }
+
+  const companyCodeLabelControl = {
+    getText: () => 'Company Code',
+  };
+
+  const controls = [
+    makeControl('companyCodeInput', 'Input', { labels: [companyCodeLabelControl] }),
+    // The bug case: icon-only button, no text, no label association.
+    makeControl('companyCodeLookup', 'Button', {}),
+    makeControl('taxDecSelect', 'Select', {}),
+    // Guard case: a real action button with its own text, sharing the same
+    // form-row as a labelled field. Must keep "Search", not borrow
+    // "Company Code" from its row-mate.
+    makeControl('searchButton', 'Button', { text: 'Search' }),
+  ];
+
+  window.sap = {
+    ui: {
+      core: {
+        Element: {
+          registry: {
+            forEach: (fn) => controls.forEach(fn),
+          },
+        },
+      },
+      getCore: () => ({
+        byId: (id) => controls.find((c) => c.getId() === id) || null,
+      }),
+    },
+  };
+</script>
+</body>
+</html>

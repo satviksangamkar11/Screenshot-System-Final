@@ -1,0 +1,34 @@
+# Regression fixture: a page with Form/Copy/Attachments tabs, each holding
+# its own fieldset ("General", "Standard", "Files"). Verifies the document
+# builder actually emits "Form Section" / "Copy Section" / "Attachments
+# Section" headings -- previously ev.tab was captured on every Evidence
+# record but never read by document/builder.ts, so the generated .docx had
+# no indication of which tab a field belonged to.
+
+name: tabbed-sections
+title: Tabbed Sections Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/tabbed-sections.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 10000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

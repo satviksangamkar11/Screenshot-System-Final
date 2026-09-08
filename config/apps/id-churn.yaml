@@ -1,0 +1,32 @@
+# Regression fixture: UI5 renumbers auto-generated view ids between renders,
+# so selectors captured at discovery stop matching. Reproduces the real
+# failure where fields that plainly existed were reported "element not
+# present". All four fields must still be filled.
+
+name: id-churn
+title: UI5 ID Churn Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/id-churn.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 3000
+  appReadyTimeoutMs: 15000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

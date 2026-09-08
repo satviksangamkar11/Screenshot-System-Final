@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shell Loop Test</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  #shell-header { background: #354a5f; color: #fff; padding: 10px 16px; display: flex; gap: 16px; align-items: center; }
+  #shell-header button { background: none; border: none; color: #fff; cursor: pointer; font-size: 14px; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; max-width: 420px; }
+  .grid { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; }
+  label { font-size: 13px; text-align: right; }
+  input { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px; font-size: 13px; width: 100%; box-sizing: border-box; }
+  .tile { display: inline-block; background: #fff; border: 1px solid #ccc; padding: 24px; margin: 12px; cursor: pointer; }
+  .breadcrumb { font-size: 12px; color: #0a6ed1; cursor: pointer; padding: 12px 16px 0; }
+</style>
+</head>
+<body>
+
+<!--
+  Simulates the SAP Fiori Launchpad shell chrome: present on every page,
+  never part of any application's own workflow. The engine must never
+  discover or click anything inside here.
+-->
+<div id="shell-header">
+  <button id="shell-home" aria-label="Home">🏠 Home</button>
+  <span>MyApp</span>
+</div>
+
+<div id="app-content">
+  <!--
+    A breadcrumb "Home" link that lives in the APPLICATION's own content, not
+    the shell chrome — so it IS discovered, but following it leaves the
+    application's own route (#MyApp-*) for the shell's (#Shell-home). This
+    must be captured once and never recursed into, or clicking its own "Home"
+    equivalent bounces forever between the launchpad and whatever tile it
+    opens.
+  -->
+  <a class="breadcrumb" id="breadcrumbHome" href="#Shell-home">Home</a>
+  <div class="panel">
+    <div class="grid">
+      <label for="myField">My Field:</label>
+      <input id="myField" type="text">
+      <label for="myField2">My Field 2:</label>
+      <input id="myField2" type="text">
+    </div>
+  </div>
+</div>
+
+<div id="launchpad" style="display:none">
+  <div class="panel">
+    <p>App Launcher</p>
+    <a class="tile" id="tile1" href="#OtherApp-run">Other App</a>
+  </div>
+</div>
+
+<div id="other-app" style="display:none">
+  <div class="panel">
+    <p>Unrelated Application</p>
+    <input id="otherField" type="text">
+  </div>
+</div>
+
+<script>
+  function route() {
+    const h = location.hash;
+    document.getElementById('app-content').style.display = h.indexOf('#MyApp') === 0 ? 'block' : 'none';
+    document.getElementById('launchpad').style.display = h === '#Shell-home' ? 'block' : 'none';
+    document.getElementById('other-app').style.display = h.indexOf('#OtherApp') === 0 ? 'block' : 'none';
+    document.title = h === '#Shell-home' ? 'Home' : (h.indexOf('#OtherApp') === 0 ? 'Other App' : 'MyApp');
+  }
+  document.getElementById('shell-home').addEventListener('click', () => { location.hash = '#Shell-home'; });
+  window.addEventListener('hashchange', route);
+  route();
+</script>
+</body>
+</html>

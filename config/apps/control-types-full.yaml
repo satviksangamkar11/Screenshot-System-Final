@@ -1,0 +1,32 @@
+# Regression fixture: covers the control kinds not exercised by any other
+# fixture -- radio button groups, a checkbox, a native multi-select, and a
+# file upload -- so every kind in ControlKind has at least one live
+# end-to-end check.
+
+name: control-types-full
+title: Full Control Type Coverage Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/control-types-full.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 10000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

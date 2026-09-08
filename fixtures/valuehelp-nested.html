@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Value Help Nested Content Fixture</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  .grid { display: grid; grid-template-columns: 180px 1fr; gap: 10px; max-width: 560px; }
+  dialog { border: 1px solid #999; padding: 0; width: 620px; }
+  dialog h4 { margin: 0; padding: 12px 16px; border-bottom: 1px solid #ddd; }
+  .body { padding: 16px; }
+  .filters { display: grid; grid-template-columns: 130px 1fr; gap: 10px; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .foot { padding: 12px 16px; border-top: 1px solid #ddd; text-align: right; }
+</style>
+</head>
+<body>
+<h2>Value Help With Nested Filters</h2>
+
+<div class="grid">
+  <label for="companyCode">Company Code:</label>
+  <span>
+    <input id="companyCode" type="text">
+    <button id="companyCodeVH" aria-label="Company Code value help">&#128269;</button>
+  </span>
+
+  <label for="plainNote">Plain Note:</label>
+  <input id="plainNote" type="text">
+</div>
+
+<dialog id="vhDialog">
+  <h4>Company Code</h4>
+  <div class="body">
+    <div class="filters">
+      <label for="fCity">City:</label>
+      <input id="fCity" type="text">
+      <label for="fRegion">Region:</label>
+      <select id="fRegion">
+        <option value="">Select</option>
+        <option>Hokkaido</option>
+        <option>Kanto</option>
+      </select>
+      <label for="fActive">Active only:</label>
+      <input id="fActive" type="checkbox">
+    </div>
+    <table><tbody>
+      <tr><td>7827</td><td>Tokyo HQ</td></tr>
+      <tr><td>7828</td><td>Osaka Branch</td></tr>
+    </tbody></table>
+  </div>
+  <div class="foot"><button id="vhClose">Cancel</button></div>
+</dialog>
+
+<script>
+  const dlg = document.getElementById('vhDialog');
+  document.getElementById('companyCodeVH').addEventListener('click', () => dlg.showModal());
+  document.getElementById('vhClose').addEventListener('click', () => dlg.close());
+</script>
+</body>
+</html>

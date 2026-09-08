@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — UI Documentation Engine</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36;
+    --text: #e6e9ef; --muted: #98a2b3; --accent: #3b82f6;
+    --ok: #22c55e; --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel);
+  }
+  header h1 { margin: 0; font-size: 15px; font-weight: 700; }
+  .badge {
+    font-size: 12px; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .badge.ok { color: var(--ok); border-color: var(--ok); }
+  .badge.warn { color: var(--warn); border-color: var(--warn); }
+  .spacer { flex: 1; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+
+  main { flex: 1; display: flex; flex-direction: column; padding: 12px 16px; gap: 10px; min-height: 0; }
+  .viewWrap {
+    position: relative; flex: 1; min-height: 0;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: #000; overflow: auto;
+  }
+  .viewWrap img { display: block; width: 100%; height: auto; cursor: crosshair; }
+  .viewWrap img:not([data-loaded]) { visibility: hidden; }
+  .status {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 20px; pointer-events: none;
+  }
+  .status.hidden { display: none; }
+
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .controls input[type="text"] {
+    flex: 1; min-width: 220px; padding: 9px 11px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  .controls input::placeholder { color: var(--muted); }
+  button {
+    padding: 9px 14px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 13.5px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+
+  .done {
+    margin: auto; text-align: center; max-width: 460px; padding: 28px;
+  }
+  .done h2 { margin: 0 0 8px; font-size: 18px; color: var(--ok); }
+  .done p { color: var(--muted); margin: 0; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sign in</h1>
+  <span class="badge" id="badge">connecting…</span>
+  <div class="spacer"></div>
+  <p class="hint">Click and type here exactly as you would in a browser. This tab closes itself once you are signed in.</p>
+</header>
+
+<main>
+  <div class="viewWrap" id="viewWrap">
+    <img id="view" alt="Live view of the sign-in page">
+    <div class="status" id="status">Connecting to the live view…</div>
+  </div>
+
+  <div class="controls" id="controls">
+    <input type="text" id="textInput" placeholder="Type here (username, password…) then press Enter">
+    <button id="tabBtn" title="Move to the next field">Tab</button>
+    <button id="enterBtn" title="Submit the form">Enter</button>
+  </div>
+
+  <div class="done hidden" id="donePanel">
+    <h2>Signed in</h2>
+    <p>You can close this tab — the capture continues on its own.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    badge: $('badge'), view: $('view'), status: $('status'),
+    viewWrap: $('viewWrap'), controls: $('controls'), donePanel: $('donePanel'),
+    textInput: $('textInput'), tabBtn: $('tabBtn'), enterBtn: $('enterBtn'),
+  };
+
+  // /live/<kind>/<id>  ->  /api/<kind>/<id>
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  const kind = parts[1];
+  const id = parts[2];
+  const base = '/api/' + kind + '/' + id;
+
+  let source = null;
+  let retryTimer = null;
+  let frames = 0;
+  let finished = false;
+
+  function setStatus(text) {
+    els.status.textContent = text;
+    els.status.classList.remove('hidden');
+  }
+  function setBadge(text, cls) {
+    els.badge.textContent = text;
+    els.badge.className = 'badge' + (cls ? ' ' + cls : '');
+  }
+
+  els.view.addEventListener('load', () => {
+    frames++;
+    els.view.setAttribute('data-loaded', '1');
+    els.status.classList.add('hidden');
+    setBadge('live', 'ok');
+  });
+
+  function connect() {
+    if (finished) return;
+    clearTimeout(retryTimer);
+    const s = new EventSource(base + '/screencast');
+    source = s;
+
+    s.onopen = () => setStatus('Connected — waiting for the first frame…');
+    s.onmessage = (evt) => {
+      try {
+        const d = JSON.parse(evt.data);
+        if (d.image) els.view.src = 'data:image/jpeg;base64,' + d.image;
+      } catch { /* ignore a malformed frame */ }
+    };
+    s.onerror = () => {
+      s.close();
+      if (source === s) source = null;
+      if (finished) return;
+      if (frames === 0) setStatus('Waiting for the sign-in page…');
+      setBadge('reconnecting…', 'warn');
+      // The endpoint 404s until the sign-in browser exists, so retry rather
+      // than relying on EventSource's own reconnect, which gives up on it.
+      retryTimer = setTimeout(connect, 2000);
+    };
+  }
+
+  async function send(event) {
+    if (finished) return;
+    try {
+      await fetch(base + '/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+    } catch { /* a dropped input event is not worth surfacing */ }
+  }
+
+  // Clicks map back through the image's own scaling to page coordinates.
+  els.view.addEventListener('click', (e) => {
+    if (!els.view.naturalWidth || !els.view.clientWidth) return;
+    const rect = els.view.getBoundingClientRect();
+    const x = Math.round((e.clientX - rect.left) * (els.view.naturalWidth / rect.width));
+    const y = Math.round((e.clientY - rect.top) * (els.view.naturalHeight / rect.height));
+    send({ type: 'click', x, y });
+    els.textInput.focus();
+  });
+
+  const FORWARDED = new Set(['Escape', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  els.textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = els.textInput.value;
+      if (value) {
+        send({ type: 'text', value });
+        els.textInput.value = '';
+      } else {
+        send({ type: 'key', key: 'Enter' });
+      }
+      return;
+    }
+    if (e.key === 'Backspace' && !els.textInput.value) {
+      e.preventDefault();
+      send({ type: 'key', key: 'Backspace' });
+      return;
+    }
+    if (FORWARDED.has(e.key)) {
+      e.preventDefault();
+      send({ type: 'key', key: e.key });
+    }
+  });
+
+  els.tabBtn.addEventListener('click', () => {
+    const value = els.textInput.value;
+    if (value) {
+      send({ type: 'text', value }).then(() => send({ type: 'key', key: 'Tab' }));
+      els.textInput.value = '';
+    } else {
+      send({ type: 'key', key: 'Tab' });
+    }
+    els.textInput.focus();
+  });
+  els.enterBtn.addEventListener('click', () => {
+    const value = els.textInput.value;
+    if (value) {
+      send({ type: 'text', value }).then(() => send({ type: 'key', key: 'Enter' }));
+      els.textInput.value = '';
+    } else {
+      send({ type: 'key', key: 'Enter' });
+    }
+    els.textInput.focus();
+  });
+
+  function finish() {
+    finished = true;
+    clearTimeout(retryTimer);
+    if (source) { source.close(); source = null; }
+    els.viewWrap.classList.add('hidden');
+    els.controls.classList.add('hidden');
+    els.donePanel.classList.remove('hidden');
+    setBadge('signed in', 'ok');
+    document.title = 'Signed in — UI Documentation Engine';
+  }
+
+  /*
+   * Sign-in is over when the thing that opened this view says so: a job that
+   * has moved past `awaiting-auth`, or a standalone login whose outcome is
+   * `done`. Polled rather than pushed so this page needs no second stream.
+   */
+  async function pollDone() {
+    if (finished) return;
+    try {
+      const r = await fetch(kind === 'jobs' ? '/api/jobs/' + id : '/api/logins/' + id);
+      if (r.ok) {
+        const d = await r.json();
+        const over = kind === 'jobs'
+          ? d.status !== 'awaiting-auth' && d.status !== 'queued'
+          : d.status === 'done';
+        if (over) { finish(); return; }
+      }
+    } catch { /* transient — keep polling */ }
+    setTimeout(pollDone, 1500);
+  }
+
+  connect();
+  pollDone();
+  els.textInput.focus();
+})();
+</script>
+</body>
+</html>

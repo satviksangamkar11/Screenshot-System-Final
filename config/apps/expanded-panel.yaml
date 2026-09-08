@@ -1,0 +1,33 @@
+# Regression fixture: a panel header that is a real accessible disclosure
+# toggle (role="button" aria-expanded="true") and starts OPEN, as SAP UI5's
+# own Panel header does. Guards the failure where the engine clicked such a
+# header as an ordinary button, collapsing an already-visible panel and
+# leaving every field inside it "not interactable" for the rest of the run.
+
+name: expanded-panel
+title: Expanded Panel Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/expanded-panel.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 15000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stuck Overlay Test</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .grid { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center; max-width: 420px; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px; font-size: 13px; width: 100%; box-sizing: border-box; }
+  .with-help { display: flex; gap: 4px; }
+  .vh { border: 1px solid #89919a; background: #fff; cursor: pointer; padding: 0 10px; }
+  /*
+   * A modal with role="dialog" but no dismissal affordance: no Cancel/Close/OK
+   * button, no keydown handler, and it covers the entire viewport including
+   * the page corner — every recovery strategy closeOverlay() has fails, which
+   * is the point. This reproduces a real capture run where a field's dropdown
+   * overlay never fully closed and every field behind it timed out in turn.
+   */
+  #stuck { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 9999; }
+</style>
+</head>
+<body>
+<h2>Stuck Overlay Test</h2>
+
+<div class="panel">
+  <div class="grid">
+    <label for="fieldA">Field A:</label>
+    <div class="with-help">
+      <input id="fieldA" type="text">
+      <button class="vh" id="openStuck" aria-label="Field A value help">⧉</button>
+    </div>
+
+    <label for="fieldB">Field B:</label>
+    <input id="fieldB" type="text">
+
+    <label for="fieldC">Field C:</label>
+    <input id="fieldC" type="text">
+
+    <label for="fieldD">Field D:</label>
+    <select id="fieldD">
+      <option value="">Select</option>
+      <option>One</option>
+      <option>Two</option>
+    </select>
+  </div>
+</div>
+
+<div id="stuck" role="dialog" aria-label="Stuck overlay"></div>
+
+<script>
+  document.getElementById('openStuck').addEventListener('click', () => {
+    document.getElementById('stuck').style.display = 'block';
+  });
+</script>
+</body>
+</html>

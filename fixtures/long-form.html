@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Long Form Test</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5; }
+  /*
+   * Content scrolls in an inner container, not the window — the Fiori layout
+   * that makes window.scrollTo a no-op and defeats naive segment capture.
+   */
+  #scroller { height: calc(100vh - 46px); overflow-y: auto; padding: 16px; }
+  .row { display: grid; grid-template-columns: 200px 1fr; gap: 10px; align-items: center;
+         background: #fff; border: 1px solid #e5e5e5; padding: 10px; margin-bottom: 8px; }
+  label { font-size: 13px; text-align: right; }
+  input { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px; width: 100%; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<h2>Long Form Test</h2>
+<div id="scroller"></div>
+<script>
+  // Long enough to require several screenfuls, like the real request form.
+  const rows = [];
+  for (let i = 1; i <= 60; i++) {
+    rows.push(
+      '<div class="row"><label for="f' + i + '">Field ' + i +
+      ':</label><input id="f' + i + '" type="text"></div>'
+    );
+  }
+  document.getElementById('scroller').innerHTML = rows.join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Regression fixture: a field whose overlay never fully closes, blocking
+# every field behind it. Reproduces the exact failure seen in a real capture
+# run — one stuck overlay, N fields behind it, each timing out for the same
+# underlying reason. Verifies the editability pre-check fails fast instead.
+
+name: stuck-overlay
+title: Stuck Overlay Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/stuck-overlay.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 3000
+  appReadyTimeoutMs: 15000
+  # Deliberately short for this test, so a hang would be obvious rather than
+  # taking a full 5s per blocked field.
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

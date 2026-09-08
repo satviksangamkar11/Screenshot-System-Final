@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Generic ARIA Form</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fafafa; color: #222; }
+  header { background: #444; color: #fff; padding: 10px 16px; font-size: 15px; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 17px; }
+  fieldset { background: #fff; margin: 12px; padding: 16px; border: 1px solid #ddd; }
+  legend { font-size: 14px; font-weight: bold; color: #444; padding: 0 4px; }
+  .row { display: grid; grid-template-columns: 180px 1fr; gap: 8px 10px; align-items: center; margin-bottom: 10px; max-width: 560px; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 5px 7px; border: 1px solid #999; font-size: 13px; width: 100%; box-sizing: border-box; }
+  table.repeat { border-collapse: collapse; width: 100%; max-width: 700px; }
+  table.repeat th, table.repeat td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .actions { padding: 12px 16px; text-align: right; }
+  button.primary { background: #444; color: #fff; border: none; padding: 8px 20px; cursor: pointer; font-size: 13px; }
+  button.icon { border: 1px solid #999; background: #f5f5f5; cursor: pointer; padding: 2px 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>Generic ARIA / Semantic HTML Form</header>
+<h2>Customer Record</h2>
+
+<fieldset>
+<legend>General Data</legend>
+
+<div class="row">
+  <label for="ga-first-name">First Name</label>
+  <input id="ga-first-name" name="firstName" type="text" required>
+</div>
+
+<div class="row">
+  <label for="ga-country">Country</label>
+  <select id="ga-country" name="country">
+    <option value="">Select...</option>
+    <option value="US">United States</option>
+    <option value="DE">Germany</option>
+    <option value="IN">India</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="ga-active">Active</label>
+  <input id="ga-active" name="active" type="checkbox">
+</div>
+
+<div class="row">
+  <label for="ga-start-date">Start Date</label>
+  <input id="ga-start-date" name="startDate" type="date">
+</div>
+
+</fieldset>
+
+<fieldset>
+<legend>Contact Persons</legend>
+
+<table class="repeat">
+<thead>
+<tr><th>.</th><th>Function</th><th>Name</th><th>Phone</th><th></th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><label for="ga-contact1-fn">Partner Function</label></td>
+  <td><input id="ga-contact1-fn" name="contact1Function" type="text"></td>
+  <td><label for="ga-contact1-name">Name</label><input id="ga-contact1-name" name="contact1Name" type="text"></td>
+  <td><label for="ga-contact1-phone">Phone</label><input id="ga-contact1-phone" name="contact1Phone" type="text"></td>
+  <td><button type="button" class="icon" aria-label="Remove row">X</button></td>
+</tr>
+<tr>
+  <td><label for="ga-contact2-fn">Partner Function</label></td>
+  <td><input id="ga-contact2-fn" name="contact2Function" type="text"></td>
+  <td><label for="ga-contact2-name">Name</label><input id="ga-contact2-name" name="contact2Name" type="text"></td>
+  <td><label for="ga-contact2-phone">Phone</label><input id="ga-contact2-phone" name="contact2Phone" type="text"></td>
+  <td><button type="button" class="icon" aria-label="Remove row">X</button></td>
+</tr>
+</tbody>
+</table>
+
+</fieldset>
+
+<fieldset>
+<legend>Additional Settings</legend>
+
+<div class="row">
+  <label for="ga-region">Region</label>
+  <select id="ga-region" name="region">
+    <option value="">Select...</option>
+    <option value="NA">North America</option>
+    <option value="EU">Europe</option>
+    <option value="AP">Asia Pacific</option>
+  </select>
+</div>
+
+<div class="row">
+  <label for="ga-notify">Notify by Email</label>
+  <input id="ga-notify" name="notify" type="checkbox">
+</div>
+
+</fieldset>
+
+<div class="actions">
+  <button type="button" class="icon" aria-label="Add Row">+</button>
+  <button type="button" class="icon">Cancel</button>
+  <button type="button" class="primary">Save</button>
+</div>
+
+</body>
+</html>

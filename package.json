@@ -1,0 +1,35 @@
+{
+  "name": "ui-doc-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automated UI exploration and Word-document evidence generator for SAP Fiori applications",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "login": "tsx src/index.ts login",
+    "capture": "tsx src/index.ts capture",
+    "assemble": "tsx src/index.ts assemble",
+    "run": "tsx src/index.ts run",
+    "serve": "tsx src/index.ts serve",
+    "cli": "tsx src/index.ts",
+    "check:selectors": "tsx tools/dev-checks/selector-engine.ts",
+    "check:lsdata": "tsx tools/dev-checks/lsdata.ts"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "docx": "^9.0.2",
+    "ws": "^8.18.0",
+    "yaml": "^2.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

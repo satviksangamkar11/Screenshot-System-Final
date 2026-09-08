@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Full Control Type Coverage Fixture</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 12px 10px; align-items: center; max-width: 700px; }
+  label { font-size: 13px; }
+  fieldset { border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<h2>Full Control Type Coverage Fixture</h2>
+
+<div class="grid">
+  <label>Floor:</label>
+  <fieldset style="display:flex; gap:16px; border:none; padding:0;">
+    <label><input type="radio" name="floor" value="none" checked> None</label>
+    <label><input type="radio" name="floor" value="indoor"> Indoor</label>
+    <label><input type="radio" name="floor" value="outdoor"> Outdoor</label>
+  </fieldset>
+
+  <label for="deliveryFee">Delivery fee flag:</label>
+  <input type="checkbox" id="deliveryFee">
+
+  <label for="regions">Regions (multi-select):</label>
+  <select id="regions" multiple size="4">
+    <option>North</option>
+    <option>South</option>
+    <option>East</option>
+    <option>West</option>
+  </select>
+
+  <label for="attachment">Attachment:</label>
+  <input type="file" id="attachment">
+</div>
+
+</body>
+</html>

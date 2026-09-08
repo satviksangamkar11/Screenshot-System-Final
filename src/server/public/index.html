@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Documentation Engine</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --border: #d9dee3;
+    --text: #1d2939;
+    --muted: #667085;
+    --accent: #0a6ed1;
+    --accent-dark: #0854a0;
+    --ok: #1a7f4b;
+    --warn: #b54708;
+    --err: #b42318;
+    --code-bg: #0f172a;
+    --code-text: #cbd5e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1419; --panel: #171d26; --border: #2b3441; --text: #e6edf3;
+      --muted: #94a3b8; --code-bg: #0b0f16; --code-text: #cbd5e1;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+  }
+  header h1 { margin: 0; font-size: 19px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .columns { grid-template-columns: 1fr; } }
+
+  .col {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+  }
+  .col h2 { margin: 0 0 4px; font-size: 15px; }
+  .col .hint { margin: 0 0 10px; color: var(--muted); font-size: 12.5px; }
+  textarea {
+    width: 100%; min-height: 96px; resize: vertical; padding: 10px;
+    border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    background: var(--bg); color: var(--text); word-break: break-all;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  .rowline { display: flex; align-items: center; gap: 8px; margin-top: 8px; min-height: 26px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.ok { color: var(--ok); border-color: var(--ok); }
+  .badge.warn { color: var(--warn); border-color: var(--warn); }
+
+  button {
+    font: inherit; border-radius: 6px; cursor: pointer; padding: 8px 16px;
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  }
+  button.secondary { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.small { padding: 4px 10px; font-size: 12.5px; }
+
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .actions .grow { flex: 1; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-top: 18px;
+  }
+  .panel h2 { margin: 0 0 10px; font-size: 15px; }
+  .hidden { display: none !important; }
+
+  pre.log {
+    margin: 0; background: var(--code-bg); color: var(--code-text);
+    border-radius: 6px; padding: 12px; max-height: 320px; overflow: auto;
+    font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .log .ok { color: #34d399; }
+  .log .warn { color: #fbbf24; }
+  .log .error { color: #f87171; }
+
+  table.summary { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 14px; }
+  table.summary th, table.summary td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  table.summary th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+
+  .notice { padding: 10px 12px; border-radius: 6px; font-size: 13.5px; margin-bottom: 12px; }
+  .notice.err { background: rgba(180,35,24,.1); color: var(--err); }
+  .notice.warn { background: rgba(181,71,8,.1); color: var(--warn); }
+
+  #authPanel { border-color: var(--accent); }
+  #authPanel .head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  #authPanel h2 { margin: 0; }
+  #authPanel .host {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 13px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 6px;
+  }
+  #authPanel p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  #authPanel p + p { margin-top: 10px; }
+  a.openLive {
+    display: inline-block; padding: 8px 13px; border-radius: 6px;
+    border: 1px solid var(--accent); color: var(--accent);
+    font-size: 13.5px; font-weight: 600; text-decoration: none;
+  }
+  a.openLive:hover { background: rgba(59,130,246,.12); }
+  .log a { color: var(--accent); }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .modeRow { display: flex; align-items: center; gap: 20px; margin: 4px 0 18px; }
+  .modeRow .label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .modeChoice { display: flex; align-items: center; gap: 6px; font-size: 13.5px; cursor: pointer; }
+  .modeChoice input { margin: 0; accent-color: var(--accent); }
+  .modeHint { color: var(--muted); font-size: 12.5px; margin-left: 4px; }
+
+  .manualMeta { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .manualMeta .metaLabel { font-weight: 700; font-size: 15px; }
+  .manualMeta .metaSub { color: var(--muted); font-size: 12.5px; }
+
+  .liveViewWrap {
+    position: relative; border: 1px solid var(--border); border-radius: 6px;
+    overflow: hidden; background: #111; line-height: 0;
+    aspect-ratio: 1600 / 900; min-height: 260px;
+  }
+  .liveViewWrap img {
+    width: 100%; height: 100%; object-fit: contain; display: block; cursor: crosshair;
+  }
+  /* Until an image has actually loaded, hide it rather than let the browser
+     render its native broken-image icon + alt text over the placeholder. */
+  .liveViewWrap img:not([data-loaded]) { visibility: hidden; }
+  .liveViewWrap .liveStatus {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #9aa4b2; font-size: 13px; line-height: 1.5; text-align: center; padding: 16px;
+    /* Covers the whole image, so without this it swallows every click meant
+       for the live view -- and it is shown again on each reconnect and on any
+       frame that fails to decode, cleared only by the next frame that loads.
+       Between manual steps the server stops the screencast, so that gap can
+       leave it up indefinitely with the operator clicking into nothing. Same
+       reason live.html's `.status` carries it. */
+    pointer-events: none;
+  }
+  .liveViewWrap .liveHint {
+    position: absolute; top: 8px; left: 8px; font-size: 11px; color: #fff;
+    background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 20px; line-height: 1.4;
+  }
+
+  .manualOptions { margin-top: 12px; margin-bottom: 12px; }
+  .manualOptions .optionsLabel { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .manualOptions .optionsGrid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+  }
+  .manualOptions button {
+    padding: 8px 12px; font-size: 13px; border-radius: 6px;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .manualOptions button:hover { background: rgba(10,110,209,.1); }
+
+  .manualControls { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .manualControls input[type="text"] {
+    flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; background: var(--bg); color: var(--text);
+  }
+  .manualControls button.skip { border-color: var(--warn); background: transparent; color: var(--warn); }
+
+  .toggleRow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: absolute; inset: 0; background: var(--border); border-radius: 20px;
+    transition: background .15s; cursor: pointer;
+  }
+  .switch .track::before {
+    content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%; transition: transform .15s;
+  }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::before { transform: translateX(16px); }
+  .switch input:disabled + .track { opacity: .5; cursor: not-allowed; }
+  .toggleRow label.switchLabel { font-size: 13.5px; font-weight: 600; cursor: pointer; }
+
+  #aiSummaryPanel ul { margin: 0; padding: 0; list-style: none; }
+  #aiSummaryPanel li { margin: 6px 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+  #aiSummaryPanel li.high { font-weight: 500; }
+  #aiSummaryPanel li.unresolved { color: var(--warn); }
+  #aiSummaryPanel .aiSummaryMeta { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+  #aiSummaryPanel .overallBar {
+    margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  #aiSummaryPanel .overallBar.major { border-color: var(--err); background: rgba(180,35,24,.07); }
+  #aiSummaryPanel .overallBar.moderate { border-color: var(--warn); background: rgba(181,71,8,.07); }
+  #aiSummaryPanel .overallBar.minor { border-color: var(--accent); background: rgba(10,110,209,.07); }
+  .catBadge {
+    flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    padding: 1px 6px; border-radius: 3px; text-transform: uppercase;
+    border: 1px solid currentColor; line-height: 1.6;
+  }
+  .cat-added { color: #1a7f4b; }
+  .cat-removed { color: #b42318; }
+  .cat-changed { color: #0a6ed1; }
+  .cat-structure { color: #667085; }
+  .cat-behavior { color: #7c3aed; }
+  .cat-state { color: #0891b2; }
+  .cat-unresolved { color: #b54708; }
+</style>
+</head>
+<body>
+<header>
+  <h1>UI Documentation Engine</h1>
+  <p>Paste one or both application URLs and press Generate. Leave a column empty to document only the other version. Any site needing sign-in shows a live view automatically, and the session is saved for next time.</p>
+</header>
+
+<main>
+  <div class="modeRow">
+    <span class="label">Data Entry Mode</span>
+    <label class="modeChoice">
+      <input type="radio" name="dataEntryMode" value="automatic" checked> Automatic
+    </label>
+    <label class="modeChoice">
+      <input type="radio" name="dataEntryMode" value="manual"> Manual
+    </label>
+    <span class="modeHint" id="modeHint">Fills every field automatically, as it always has.</span>
+  </div>
+
+  <div class="toggleRow">
+    <label class="switch">
+      <input type="checkbox" id="aiSummaryToggle">
+      <span class="track"></span>
+    </label>
+    <label class="switchLabel" for="aiSummaryToggle">AI Summary</label>
+    <span class="modeHint">Set this before generating, or any time after — it derives 3–8 documentation points from the captured UI structure and appends them to the document. Two versions produce a field-level comparison instead.</span>
+  </div>
+
+  <div class="columns">
+    <div class="col">
+      <h2>Old Version</h2>
+      <p class="hint">Optional — leave empty to skip.</p>
+      <textarea id="oldUrl" spellcheck="false" placeholder="https://…"></textarea>
+      <div class="rowline">
+        <span id="oldBadge" class="badge">no URL</span>
+        <button type="button" class="secondary small hidden" id="oldLogin">Sign in</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <h2>New Version</h2>
+      <p class="hint">Optional — leave empty to skip.</p>
+      <textarea id="newUrl" spellcheck="false" placeholder="https://…"></textarea>
+      <div class="rowline">
+        <span id="newBadge" class="badge">no URL</span>
+        <button type="button" class="secondary small hidden" id="newLogin">Sign in</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="generate">Generate Document</button>
+    <span class="grow" id="status"></span>
+  </div>
+
+  <div class="panel hidden" id="authPanel">
+    <div class="head">
+      <span class="spinner"></span>
+      <h2 id="authHeading">Waiting for sign-in</h2>
+    </div>
+    <p id="authDetail"></p>
+    <p><a class="openLive" id="authOpenLive" target="_blank" rel="noopener">Open sign-in in a new tab →</a></p>
+  </div>
+
+  <div class="panel hidden" id="resultPanel">
+    <h2>Document</h2>
+    <div id="resultNotice"></div>
+    <table class="summary hidden" id="summaryTable">
+      <thead><tr><th>Version</th><th>Points</th><th>Pages</th><th>Screenshots</th><th>Issues</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="download" class="hidden">Download .docx</button>
+  </div>
+
+  <div class="panel hidden" id="aiSummaryPanel">
+    <h2>AI Summary</h2>
+    <div id="aiSummaryBody"></div>
+  </div>
+
+  <div class="panel hidden" id="manualPanel">
+    <h2>Manual Data Entry</h2>
+    <div id="manualActive" class="hidden">
+      <div class="manualMeta">
+        <span class="metaLabel" id="manualFieldLabel"></span>
+        <span class="metaSub" id="manualFieldSub"></span>
+      </div>
+    </div>
+    <p class="hint" id="manualWaitHint">Waiting for the next field…</p>
+  </div>
+
+  <!--
+    Shared by three flows that all stream a CDP screencast and forward
+    click/key/typed input into it: Manual data-entry (manualPanel above),
+    job-driven sign-in (authPanel above), and the standalone Sign in button.
+    Only one is ever active at a time, so one live view suffices.
+  -->
+  <div class="panel hidden" id="liveViewPanel">
+    <h2 id="liveViewHeading">Live View</h2>
+    <p class="hint" id="liveViewHint">Click and type directly below.</p>
+    <div class="liveViewWrap">
+      <img id="liveView" alt="Live view">
+      <div class="liveStatus" id="liveStatus">Connecting to live view…</div>
+      <span class="liveHint hidden" id="liveHint">Click to interact</span>
+    </div>
+    <div class="manualOptions hidden" id="manualOptions">
+      <div class="optionsLabel">Select an option:</div>
+      <div class="optionsGrid" id="optionsGrid"></div>
+    </div>
+    <div class="manualControls" id="manualControls">
+      <input type="text" id="manualTextInput" placeholder="Type a value, then press Enter">
+      <button id="manualSubmit">Submit Element</button>
+      <button id="manualSkip" class="secondary skip">Skip</button>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="logPanel">
+    <h2>Progress</h2>
+    <pre class="log" id="log"></pre>
+  </div>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    oldUrl: $('oldUrl'), newUrl: $('newUrl'),
+    oldBadge: $('oldBadge'), newBadge: $('newBadge'),
+    oldLogin: $('oldLogin'), newLogin: $('newLogin'),
+    generate: $('generate'), status: $('status'),
+    resultPanel: $('resultPanel'), resultNotice: $('resultNotice'),
+    summaryTable: $('summaryTable'), download: $('download'),
+    aiSummaryToggle: $('aiSummaryToggle'), aiSummaryPanel: $('aiSummaryPanel'), aiSummaryBody: $('aiSummaryBody'),
+    logPanel: $('logPanel'), log: $('log'),
+    authPanel: $('authPanel'), authHeading: $('authHeading'),
+    authDetail: $('authDetail'), authOpenLive: $('authOpenLive'),
+    modeHint: $('modeHint'),
+    manualPanel: $('manualPanel'),
+    manualActive: $('manualActive'),
+    manualFieldLabel: $('manualFieldLabel'), manualFieldSub: $('manualFieldSub'),
+    liveViewPanel: $('liveViewPanel'), liveViewHeading: $('liveViewHeading'), liveViewHint: $('liveViewHint'),
+    liveView: $('liveView'), liveStatus: $('liveStatus'), liveHint: $('liveHint'),
+    manualOptions: $('manualOptions'), optionsGrid: $('optionsGrid'),
+    manualControls: $('manualControls'),
+    manualTextInput: $('manualTextInput'),
+    manualSubmit: $('manualSubmit'), manualSkip: $('manualSkip'),
+    manualWaitHint: $('manualWaitHint'),
+  };
+
+  const modeRadios = Array.from(document.querySelectorAll('input[name="dataEntryMode"]'));
+  const modeHints = {
+    automatic: 'Fills every field automatically, as it always has.',
+    manual: 'Shows a live view below. You fill each field yourself and confirm it there.',
+  };
+  function currentMode() {
+    const checked = modeRadios.find((r) => r.checked);
+    return checked ? checked.value : 'automatic';
+  }
+  for (const r of modeRadios) {
+    r.addEventListener('change', () => {
+      els.modeHint.textContent = modeHints[currentMode()] || '';
+    });
+  }
+
+  let pollTimer = null;
+  let currentJob = null;
+
+  // Allows a run to be shared or bookmarked with its URLs already filled in:
+  //   /?old=<encoded>&new=<encoded>&title=<text>
+  (function prefill() {
+    const q = new URLSearchParams(window.location.search);
+    const oldUrl = q.get('old');
+    const newUrl = q.get('new');
+    const title = q.get('title');
+    if (oldUrl) els.oldUrl.value = oldUrl;
+    if (newUrl) els.newUrl.value = newUrl;
+    if (title) document.title = title + ' — UI Documentation Engine';
+    if (oldUrl) refresh('old');
+    if (newUrl) refresh('new');
+  })();
+
+  function isHttpUrl(value) {
+    try {
+      const u = new URL(value.trim());
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch { return false; }
+  }
+
+  // Reflects whether the host behind a URL already has a saved sign-in.
+  async function refresh(which) {
+    const input = els[which + 'Url'];
+    const badge = els[which + 'Badge'];
+    const loginBtn = els[which + 'Login'];
+    const value = input.value.trim();
+
+    if (!value) {
+      badge.textContent = 'no URL'; badge.className = 'badge';
+      loginBtn.classList.add('hidden');
+      return;
+    }
+    if (!isHttpUrl(value)) {
+      badge.textContent = 'not a valid http(s) URL'; badge.className = 'badge warn';
+      loginBtn.classList.add('hidden');
+      return;
+    }
+
+    badge.textContent = 'checking…'; badge.className = 'badge';
+    try {
+      const r = await fetch('/api/session?url=' + encodeURIComponent(value));
+      const d = await r.json();
+      if (d.hasSession) {
+        badge.textContent = 'signed in'; badge.className = 'badge ok';
+        loginBtn.textContent = 'Sign in again';
+      } else {
+        badge.textContent = 'sign-in needed'; badge.className = 'badge warn';
+        loginBtn.textContent = 'Sign in';
+      }
+      loginBtn.classList.remove('hidden');
+    } catch {
+      badge.textContent = 'unknown'; badge.className = 'badge';
+    }
+  }
+
+  let debounce;
+  for (const which of ['old', 'new']) {
+    els[which + 'Url'].addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => refresh(which), 350);
+    });
+
+    els[which + 'Login'].addEventListener('click', async () => {
+      const value = els[which + 'Url'].value.trim();
+      if (!isHttpUrl(value)) return;
+      const btn = els[which + 'Login'];
+      const previous = btn.textContent;
+      setBusy(true);
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      setStatus('Sign in using the live view below.');
+      try {
+        const r = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: value }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Sign-in failed');
+
+        els.authPanel.classList.remove('hidden');
+        els.authHeading.textContent = 'Waiting for sign-in';
+        els.authDetail.innerHTML =
+          'Sign in to <span class="host">' + escapeHtml(safeHostOf(value)) +
+          '</span> in the live view below, or in a tab of its own.';
+        els.authOpenLive.href = '/live/logins/' + d.loginId;
+        els.liveViewPanel.classList.remove('hidden');
+        els.liveViewHeading.textContent = 'Sign in';
+        els.liveViewHint.textContent =
+          'Click and type directly below, or open it in a tab of its own using the link above.';
+        els.manualSubmit.classList.add('hidden');
+        els.manualSkip.classList.add('hidden');
+        openLiveView('/api/logins/' + d.loginId);
+
+        const outcome = await pollLoginOutcome(d.loginId);
+        if (outcome.error) throw new Error(outcome.error);
+        setStatus('Signed in.');
+      } catch (e) {
+        setStatus('Sign-in failed: ' + e.message);
+      } finally {
+        closeLiveView();
+        els.liveViewPanel.classList.add('hidden');
+        els.authPanel.classList.add('hidden');
+        setBusy(false);
+        btn.disabled = false;
+        btn.textContent = previous;
+        refresh(which);
+      }
+    });
+  }
+
+  /** Polls a standalone sign-in (see startStandaloneLogin/jobs.ts) until it finishes. */
+  function pollLoginOutcome(loginId) {
+    return new Promise((resolve) => {
+      const check = async () => {
+        try {
+          const r = await fetch('/api/logins/' + loginId);
+          const d = await r.json();
+          if (r.ok && d.status === 'done') {
+            resolve(d);
+            return;
+          }
+        } catch { /* transient — keep polling */ }
+        setTimeout(check, 1500);
+      };
+      check();
+    });
+  }
+
+  // While a job runs it drives sign-in itself; a manual sign-in at the same
+  // time would collide over the shared live view.
+  function setBusy(busy) {
+    els.generate.disabled = busy;
+    els.oldLogin.disabled = busy;
+    els.newLogin.disabled = busy;
+    for (const r of modeRadios) r.disabled = busy;
+  }
+
+  function setStatus(text, busy) {
+    els.status.innerHTML = '';
+    if (busy) {
+      const s = document.createElement('span');
+      s.className = 'spinner';
+      s.style.marginRight = '8px';
+      els.status.appendChild(s);
+    }
+    els.status.appendChild(document.createTextNode(text || ''));
+  }
+
+  els.generate.addEventListener('click', async () => {
+    const oldUrl = els.oldUrl.value.trim();
+    const newUrl = els.newUrl.value.trim();
+
+    if (!oldUrl && !newUrl) {
+      setStatus('Enter at least one URL.');
+      return;
+    }
+
+    setBusy(true);
+    els.resultPanel.classList.add('hidden');
+    els.authPanel.classList.add('hidden');
+    els.manualPanel.classList.add('hidden');
+    els.liveViewPanel.classList.add('hidden');
+    closeLiveView();
+    els.download.classList.add('hidden');
+    els.summaryTable.classList.add('hidden');
+    els.resultNotice.innerHTML = '';
+    // Leave the toggle's checked state alone — it can be set before Generate
+    // is even clicked, and should carry into the new job. Just clear any
+    // summary left over from a previous job.
+    els.aiSummaryPanel.classList.add('hidden');
+    els.aiSummaryBody.innerHTML = '';
+    els.logPanel.classList.remove('hidden');
+    els.log.textContent = '';
+    setStatus('Starting…', true);
+
+    try {
+      const r = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldUrl, newUrl, dataEntryMode: currentMode() }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not start');
+      currentJob = d.jobId;
+      setStatus('Exploring ' + d.versions.join(' and ') + '…', true);
+      poll();
+    } catch (e) {
+      setStatus('Failed: ' + e.message);
+      setBusy(false);
+    }
+  });
+
+  function renderLog(lines) {
+    els.log.innerHTML = lines.map((l) => {
+      const cls = l.level === 'ok' ? 'ok' : l.level === 'warn' ? 'warn' : l.level === 'error' ? 'error' : '';
+      let text = String(l.message).replace(/[<>&]/g, (c) =>
+        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+      /*
+       * The server logs the live view as a path rather than a full URL,
+       * because it cannot know which host/port the operator reached it on.
+       * Turning it into a link here resolves it against whatever that is.
+       */
+      text = text.replace(/\/live\/(?:jobs|logins)\/[a-z0-9-]+/gi, (p) =>
+        '<a href="' + p + '" target="_blank" rel="noopener">' + p + '</a>');
+      return cls ? '<span class="' + cls + '">' + text + '</span>' : text;
+    }).join('\n');
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  /** Host portion of a URL, for display; falls back to the raw value. */
+  function safeHostOf(value) {
+    try { return new URL(value).host; } catch { return value; }
+  }
+
+  // --- Live view + input forwarding, shared by manual data-entry, --------------
+  // --- job-driven sign-in, and the standalone Sign in button. ------------------
+
+  let liveSource = null;
+  // Base API path for the current live view: '/api/jobs/<id>' (manual data
+  // entry and job-driven sign-in — same job, so the same path serves both,
+  // transparently switching server-side between the login and the capture's
+  // own RemoteControl) or '/api/logins/<id>' (standalone sign-in).
+  let liveBaseUrl = null;
+  let activeManualId = null;
+  // Identifies the control `updateManualView` last rendered its inputs for, so
+  // a poll tick that brings no change leaves the operator's live DOM alone.
+  let renderedControlKey = null;
+  let liveFrameCount = 0;
+
+  function setLiveStatus(text) {
+    els.liveStatus.textContent = text;
+    els.liveStatus.classList.remove('hidden');
+  }
+
+  els.liveView.addEventListener('load', () => {
+    liveFrameCount++;
+    els.liveView.setAttribute('data-loaded', '1');
+    els.liveStatus.classList.add('hidden');
+    els.liveHint.classList.remove('hidden');
+  });
+  els.liveView.addEventListener('error', () => {
+    // A frame that failed to decode — don't leave the native broken-image
+    // icon showing; go back to an explicit, readable status instead.
+    console.warn('[live view] a frame failed to decode (frame #' + liveFrameCount + ')');
+    els.liveView.removeAttribute('data-loaded');
+    setLiveStatus('Live view: a frame failed to load. Waiting for the next one…');
+  });
+
+  let liveRetryTimer = null;
+
+  function openLiveView(baseUrl) {
+    if (liveSource && liveBaseUrl === baseUrl) return;
+    closeLiveView();
+    liveBaseUrl = baseUrl;
+    liveFrameCount = 0;
+    setLiveStatus('Connecting to live view…');
+    connectLiveView(baseUrl);
+  }
+
+  /*
+   * Separate from `openLiveView` so a dropped connection can be retried on
+   * our own explicit timer. The browser's native EventSource reconnect is
+   * not relied on here: a live capture showed it failing to recover from
+   * the very first attempt (made while the job is still just starting, well
+   * before `RemoteControl` exists on the server, so it 404s) and simply
+   * never trying again, leaving the live view permanently blank even long
+   * after the endpoint had become available -- confirmed by curling the
+   * same job's `/screencast` moments later and getting a clean 200.
+   */
+  function connectLiveView(baseUrl) {
+    if (liveBaseUrl !== baseUrl) return; // superseded by a newer live view/close
+    clearTimeout(liveRetryTimer);
+
+    const source = new EventSource(baseUrl + '/screencast');
+    liveSource = source;
+
+    source.onopen = () => {
+      console.log('[live view] connected:', baseUrl);
+      setLiveStatus('Connected — waiting for the first frame…');
+    };
+    source.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data);
+        if (data.image) els.liveView.src = 'data:image/jpeg;base64,' + data.image;
+        else console.warn('[live view] frame event with no image field', data);
+      } catch (e) {
+        console.warn('[live view] could not parse frame event', e, evt.data && evt.data.slice(0, 120));
+      }
+    };
+    source.onerror = (e) => {
+      console.warn('[live view] SSE connection error, reconnecting in 2s', e);
+      if (liveFrameCount === 0) setLiveStatus('Live view: connection lost, retrying…');
+      source.close();
+      if (liveSource === source) liveSource = null;
+      liveRetryTimer = setTimeout(() => connectLiveView(baseUrl), 2000);
+    };
+  }
+
+  function closeLiveView() {
+    clearTimeout(liveRetryTimer);
+    if (liveSource) { liveSource.close(); liveSource = null; }
+    liveBaseUrl = null;
+    liveFrameCount = 0;
+    els.liveView.removeAttribute('src');
+    els.liveView.removeAttribute('data-loaded');
+    els.liveHint.classList.add('hidden');
+  }
+
+  async function sendInput(event) {
+    if (!liveBaseUrl) return;
+    try {
+      await fetch(liveBaseUrl + '/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(event),
+      });
+    } catch { /* a dropped input event is not worth surfacing as an error */ }
+  }
+
+  els.liveView.addEventListener('click', (e) => {
+    const img = els.liveView;
+    if (!img.naturalWidth || !img.clientWidth) return;
+    const rect = img.getBoundingClientRect();
+    const scaleX = img.naturalWidth / rect.width;
+    const scaleY = img.naturalHeight / rect.height;
+    const x = Math.round((e.clientX - rect.left) * scaleX);
+    const y = Math.round((e.clientY - rect.top) * scaleY);
+    sendInput({ type: 'click', x, y });
+  });
+
+  // A small fixed set of forwarded keys for keyboard-driven UI (closing
+  // pickers, moving through a list). Typed characters go through the text
+  // box below instead — see `manualSubmit`'s Enter handling.
+  const FORWARDED_KEYS = new Set(['Escape', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  els.manualTextInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = els.manualTextInput.value;
+      if (value) {
+        // Insert the typed text into the focused SAP field, then Tab to commit
+        // it (same as Automatic mode's fill → Tab sequence). Without the Tab,
+        // the value sits in the field but dependent fields don't react and the
+        // SAP validation doesn't run — the field looks filled but isn't treated
+        // as confirmed by the framework.
+        sendInput({ type: 'text', value })
+          .then(() => sendInput({ type: 'key', key: 'Tab' }));
+        els.manualTextInput.value = '';
+      } else {
+        sendInput({ type: 'key', key: 'Enter' });
+      }
+      return;
+    }
+    if (e.key === 'Backspace' && !els.manualTextInput.value) {
+      e.preventDefault();
+      sendInput({ type: 'key', key: 'Backspace' });
+      return;
+    }
+    if (FORWARDED_KEYS.has(e.key)) {
+      e.preventDefault();
+      sendInput({ type: 'key', key: e.key });
+    }
+  });
+
+  async function confirmActive(action, btn) {
+    if (!currentJob || !activeManualId) return;
+    btn.disabled = true;
+    try {
+      const r = await fetch('/api/jobs/' + currentJob + '/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ controlId: activeManualId, action }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        setStatus('Could not confirm: ' + (d.error || 'unknown error'));
+      } else {
+        els.manualTextInput.value = '';
+      }
+    } catch (e) {
+      setStatus('Could not confirm: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  els.manualSubmit.addEventListener('click', () => confirmActive('submit', els.manualSubmit));
+  els.manualSkip.addEventListener('click', () => confirmActive('skip', els.manualSkip));
+
+  function getInputPlaceholder(kind, inputType) {
+    if (kind === 'input' || kind === 'textarea') {
+      if (inputType === 'number') return 'Type a number';
+      if (inputType === 'email') return 'Type an email';
+      if (inputType === 'tel') return 'Type a phone number';
+      if (inputType === 'url') return 'Type a URL';
+      if (inputType === 'password') return 'Type password';
+      return 'Type a value';
+    }
+    if (kind === 'select' || kind === 'multiSelect') return 'Select from options above';
+    if (kind === 'date') return 'Select a date from the picker';
+    if (kind === 'dateRange') return 'Select a date range';
+    if (kind === 'valueHelp') return 'Choose from the list';
+    return 'Type a value';
+  }
+
+  function updateManualView(d) {
+    if (d.dataEntryMode !== 'manual') {
+      els.manualPanel.classList.add('hidden');
+      els.liveViewPanel.classList.add('hidden');
+      return;
+    }
+    els.manualPanel.classList.remove('hidden');
+    els.liveViewPanel.classList.remove('hidden');
+    els.liveViewHeading.textContent = 'Live View';
+    els.liveViewHint.textContent = 'Click and type directly in the live view below, then press Submit.';
+    els.manualSubmit.classList.remove('hidden');
+    els.manualSkip.classList.remove('hidden');
+    // Only once the queue has at least one item: guarantees `RemoteControl`
+    // already exists server-side (it's created before discovery ever runs),
+    // so the very first connection attempt is likely to succeed outright.
+    if (d.manualQueue && d.manualQueue.length > 0) openLiveView('/api/jobs/' + currentJob);
+
+    const active = (d.manualQueue || []).find((q) => q.id === d.activeManualId);
+    if (active) {
+      activeManualId = active.id;
+      els.manualActive.classList.remove('hidden');
+      els.manualWaitHint.classList.add('hidden');
+      els.manualFieldLabel.textContent = active.label;
+      els.manualFieldSub.textContent = [active.kind, active.tab, active.section].filter(Boolean).join(' · ');
+
+      /*
+       * Everything below rebuilds or resets the controls the operator is
+       * actively using, so it must run only when the control they are working
+       * on has actually changed -- not on every poll tick.
+       *
+       * `poll()` calls this function once a second for as long as a job runs.
+       * Re-running the block unconditionally reassigned `optionsGrid.innerHTML`
+       * every second, destroying and recreating the very buttons the operator
+       * was clicking: a press that happened to straddle a tick landed its
+       * mousedown on a node that no longer existed by mouseup, so no `click`
+       * event ever fired and nothing was sent -- a click that silently did
+       * nothing, roughly once a second, with no error anywhere. The same tick
+       * also cleared `manualTextInput.value`, wiping whatever was half-typed.
+       *
+       * The key covers the options as well as the control id: options can
+       * arrive in a later poll than the control itself, and that genuinely
+       * does need a rebuild.
+       */
+      const controlKey = JSON.stringify([active.id, active.kind, active.inputType, active.options || []]);
+      if (controlKey !== renderedControlKey) {
+        renderedControlKey = controlKey;
+
+        // Configure input based on control kind
+        const isPassword = active.inputType === 'password';
+        const isSelection = active.kind === 'select' || active.kind === 'multiSelect' ||
+                           active.kind === 'valueHelp' || active.kind === 'date' || active.kind === 'dateRange';
+        const isNumber = active.inputType === 'number';
+
+        els.manualTextInput.type = isPassword ? 'password' : isNumber ? 'number' : 'text';
+        els.manualTextInput.placeholder = getInputPlaceholder(active.kind, active.inputType);
+        els.manualTextInput.value = '';
+        els.manualTextInput.disabled = isSelection && active.options && active.options.length > 0;
+
+        // Display selection options if available
+        if (active.options && active.options.length > 0) {
+          els.manualOptions.classList.remove('hidden');
+          els.optionsGrid.innerHTML = active.options.map((opt) => {
+            return (
+              '<button type="button" data-option-value="' + escapeHtml(opt.value) + '">' +
+              escapeHtml(opt.label) +
+              '</button>'
+            );
+          }).join('');
+
+          // Handle option button clicks: send value to browser and submit
+          for (const btn of els.optionsGrid.querySelectorAll('button')) {
+            btn.addEventListener('click', async (e) => {
+              e.preventDefault();
+              const value = btn.getAttribute('data-option-value');
+              await sendInput({ type: 'text', value })
+                .then(() => sendInput({ type: 'key', key: 'Tab' }))
+                .then(() => confirmActive('submit', els.manualSubmit));
+            });
+          }
+        } else {
+          els.manualOptions.classList.add('hidden');
+          els.optionsGrid.innerHTML = '';
+          els.manualTextInput.disabled = false;
+        }
+      }
+    } else {
+      activeManualId = null;
+      // Nothing is active, so the next control that becomes active must render
+      // even if it happens to be the one rendered last (a repeated field, or
+      // the same control coming back after a retry).
+      renderedControlKey = null;
+      els.manualActive.classList.add('hidden');
+      els.manualWaitHint.classList.remove('hidden');
+      els.manualOptions.classList.add('hidden');
+      els.optionsGrid.innerHTML = '';
+      els.manualTextInput.type = 'text';
+      els.manualTextInput.placeholder = 'Type a value, then press Enter';
+      els.manualTextInput.disabled = false;
+    }
+  }
+
+  function poll() {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(async () => {
+      try {
+        const r = await fetch('/api/jobs/' + currentJob);
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Lost the job');
+
+        renderLog(d.log);
+
+        // Sign-in phase: sign in directly in the live view below.
+        if (d.status === 'awaiting-auth' && d.authStage) {
+          const a = d.authStage;
+          els.authPanel.classList.remove('hidden');
+          els.authHeading.textContent =
+            a.total > 1
+              ? 'Waiting for sign-in (' + a.index + ' of ' + a.total + ')'
+              : 'Waiting for sign-in';
+          els.authDetail.innerHTML =
+            'Sign in to <span class="host">' + escapeHtml(a.host) + '</span> (' +
+            escapeHtml(a.version) + ' version) in the live view below — the ' +
+            'document generates automatically once every sign-in is complete, ' +
+            'and the session is saved so this is not needed again.';
+          els.authOpenLive.href = '/live/jobs/' + currentJob;
+          els.liveViewPanel.classList.remove('hidden');
+          els.liveViewHeading.textContent = 'Sign in';
+          els.liveViewHint.textContent =
+            'Click and type directly below, or open it in a tab of its own using the link above.';
+          els.manualSubmit.classList.add('hidden');
+          els.manualSkip.classList.add('hidden');
+          openLiveView('/api/jobs/' + currentJob);
+          setStatus('Waiting for sign-in…', true);
+          poll();
+          return;
+        }
+
+        els.authPanel.classList.add('hidden');
+
+        if (d.status === 'running' || d.status === 'queued') {
+          updateManualView(d);
+          setStatus(
+            d.dataEntryMode === 'manual' ? 'Waiting on manual entry…' : 'Exploring…',
+            true,
+          );
+          poll();
+          return;
+        }
+
+        els.manualPanel.classList.add('hidden');
+        els.liveViewPanel.classList.add('hidden');
+        closeLiveView();
+        setBusy(false);
+        els.resultPanel.classList.remove('hidden');
+
+        if (d.status === 'error') {
+          setStatus('Failed.');
+          els.resultNotice.innerHTML =
+            '<div class="notice err">' + escapeHtml(d.error || 'Unknown error') + '</div>';
+          if (els.aiSummaryToggle.checked) {
+            els.aiSummaryPanel.classList.remove('hidden');
+            els.aiSummaryBody.innerHTML =
+              '<div class="notice warn">No version was captured, so there is nothing to summarise.</div>';
+          }
+          return;
+        }
+
+        setStatus('Done.');
+
+        if (d.needsLoginFor && d.needsLoginFor.length) {
+          els.resultNotice.innerHTML =
+            '<div class="notice warn">Documented without ' +
+            escapeHtml(d.needsLoginFor.join(', ')) +
+            ' — that version needs sign-in. Sign in and generate again to include it.</div>';
+        }
+
+        if (d.summary && d.summary.length) {
+          const body = els.summaryTable.querySelector('tbody');
+          body.innerHTML = d.summary.map((s) =>
+            '<tr><td>' + s.version + '</td><td>' + s.points + '</td><td>' +
+            s.pages + '</td><td>' + s.screenshots + '</td><td>' +
+            s.exceptions + '</td></tr>').join('');
+          els.summaryTable.classList.remove('hidden');
+        }
+
+        if (d.hasDocument) {
+          els.download.classList.remove('hidden');
+          els.download.onclick = () => {
+            window.location.href = '/api/jobs/' + currentJob + '/document';
+          };
+          // Toggle may have been set before Generate was even clicked — this
+          // is the first moment a document (and its runIds) actually exists.
+          maybeStartAiSummary();
+        }
+      } catch (e) {
+        setStatus('Failed: ' + e.message);
+        setBusy(false);
+      }
+    }, 1000);
+  }
+
+  // --- AI Summary toggle -------------------------------------------------
+  // ON: sends the finished capture's full-page content to the router for a
+  // bullet-point summary (single version) or comparison (two versions).
+  // OFF: suppresses display; if never turned on for this job, nothing is
+  // generated at all — the backend only starts work when this fires.
+
+  const CATEGORY_LABELS = {
+    added: 'Added', removed: 'Removed', changed: 'Changed',
+    structure: 'Structure', behavior: 'Behavior', state: 'State', unresolved: 'Unresolved',
+  };
+  const OVERALL_LEVELS = {
+    no_change: 'no-change', minor: 'minor', moderate: 'moderate', major: 'major',
+  };
+  const OVERALL_LABELS = {
+    no_change: 'No meaningful UI change',
+    minor: 'Minor UI change',
+    moderate: 'Moderate UI change',
+    major: 'Major structural change',
+  };
+
+  function renderAiSummary(d) {
+    if (!els.aiSummaryToggle.checked) {
+      els.aiSummaryPanel.classList.add('hidden');
+      return;
+    }
+    els.aiSummaryPanel.classList.remove('hidden');
+    if (d.aiSummaryStatus === 'running' || !d.aiSummaryStatus) {
+      els.aiSummaryBody.innerHTML =
+        '<div class="aiSummaryMeta"><span class="spinner" style="margin-right:6px"></span>Generating…</div>';
+      return;
+    }
+    if (d.aiSummaryStatus === 'error') {
+      els.aiSummaryBody.innerHTML =
+        '<div class="notice err">' + escapeHtml(d.aiSummaryError || 'AI summary failed') + '</div>';
+      return;
+    }
+
+    const ai = d.aiSummary;
+    if (!ai || !ai.points || ai.points.length === 0) {
+      els.aiSummaryBody.innerHTML = '<div class="aiSummaryMeta">No documentable UI evidence was captured.</div>';
+      return;
+    }
+
+    const isComparison = ai.type === 'comparison';
+    const meta = isComparison
+      ? 'Field-level comparison — old vs new'
+      : 'UI documentation points';
+
+    const items = ai.points.map((p) => {
+      const isHigh = p.importance === 'high';
+      const isUnresolved = p.category === 'unresolved';
+      const cat = p.category || '';
+      const liClass = [isHigh ? 'high' : '', isUnresolved ? 'unresolved' : ''].filter(Boolean).join(' ');
+
+      let badge = '';
+      if (isComparison && cat) {
+        const label = CATEGORY_LABELS[cat] || cat;
+        badge = '<span class="catBadge cat-' + escapeHtml(cat) + '">' + escapeHtml(label) + '</span>';
+      } else if (!isComparison && isHigh) {
+        badge = '<span class="catBadge cat-structure" style="border-color:var(--border);color:var(--muted)">Key</span>';
+      }
+
+      return '<li class="' + liClass + '">' + badge + '<span>' + escapeHtml(p.text) + '</span></li>';
+    }).join('');
+
+    let html = '<div class="aiSummaryMeta">' + escapeHtml(meta) + '</div><ul>' + items + '</ul>';
+
+    if (isComparison && ai.overallChange) {
+      const level = ai.overallChange.level || 'no_change';
+      const levelLabel = OVERALL_LABELS[level] || level;
+      const barClass = 'overallBar ' + (OVERALL_LEVELS[level] || 'no-change');
+      html += '<div class="' + barClass + '"><strong>Overall:</strong> ' +
+        escapeHtml(levelLabel) +
+        (ai.overallChange.text ? ' — ' + escapeHtml(ai.overallChange.text) : '') + '</div>';
+    }
+
+    els.aiSummaryBody.innerHTML = html;
+  }
+
+  // Main job polling stops once the job is done; the AI summary can be
+  // triggered afterwards, so it gets its own short-lived poll loop.
+  function pollAiSummary() {
+    if (!currentJob || !els.aiSummaryToggle.checked) return;
+    fetch('/api/jobs/' + currentJob)
+      .then((r) => r.json())
+      .then((d) => {
+        renderAiSummary(d);
+        if (d.aiSummaryStatus === 'running') setTimeout(pollAiSummary, 1200);
+      })
+      .catch(() => setTimeout(pollAiSummary, 1200));
+  }
+
+  // Can be checked before Generate is even clicked (there is no job yet), or
+  // any time after — either way it just remembers the preference here; the
+  // actual generation only starts once a document exists, from whichever of
+  // these two triggers happens second: the toggle turning on, or the job
+  // finishing (see `maybeStartAiSummary` call in `poll()`, above).
+  async function maybeStartAiSummary() {
+    if (!els.aiSummaryToggle.checked || !currentJob) return;
+    let status;
+    try {
+      status = await (await fetch('/api/jobs/' + currentJob)).json();
+    } catch {
+      return; // transient — the next trigger (poll(), or another toggle flip) will retry
+    }
+    if (!status.hasDocument) return; // not ready yet — poll() calls this again once it is
+
+    els.aiSummaryPanel.classList.remove('hidden');
+    if (!els.aiSummaryBody.innerHTML) {
+      els.aiSummaryBody.innerHTML =
+        '<div class="aiSummaryMeta"><span class="spinner" style="margin-right:6px"></span>Generating…</div>';
+    }
+    try {
+      const r = await fetch('/api/jobs/' + currentJob + '/ai-summary', { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not start AI summary');
+      pollAiSummary();
+    } catch (e) {
+      els.aiSummaryPanel.classList.remove('hidden');
+      els.aiSummaryBody.innerHTML = '<div class="notice err">' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  els.aiSummaryToggle.addEventListener('change', () => {
+    if (!els.aiSummaryToggle.checked) {
+      els.aiSummaryPanel.classList.add('hidden');
+      return;
+    }
+    maybeStartAiSummary();
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[<>&]/g, (c) =>
+      ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  }
+})();
+</script>
+</body>
+</html>

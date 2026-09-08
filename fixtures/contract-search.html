@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DME Contract Master Search</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  header { background: #354a5f; color: #fff; padding: 10px 16px; font-size: 15px; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5; font-size: 17px; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .panel h3 { margin: 0 0 14px; font-size: 15px; color: #354a5f; }
+  .grid { display: grid; grid-template-columns: 200px 1fr 200px 1fr; gap: 12px 10px; align-items: center; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px; font-size: 13px; width: 100%; box-sizing: border-box; }
+  input[readonly] { background: #f2f2f2; color: #6a6d70; }
+  .with-help { display: flex; gap: 4px; }
+  .vh { border: 1px solid #89919a; background: #fff; cursor: pointer; padding: 0 10px; border-radius: 3px; }
+  .actions { padding: 12px 16px; text-align: right; }
+  button.primary { background: #0a6ed1; color: #fff; border: none; padding: 8px 20px; border-radius: 3px; cursor: pointer; font-size: 13px; }
+  button.ghost { background: #fff; border: 1px solid #0a6ed1; color: #0a6ed1; padding: 8px 20px; border-radius: 3px; cursor: pointer; font-size: 13px; }
+  dialog { border: none; box-shadow: 0 8px 32px rgba(0,0,0,.3); padding: 0; width: 460px; }
+  dialog h4 { margin: 0; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; font-size: 15px; }
+  dialog .body { padding: 12px 16px; }
+  dialog table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  dialog td { padding: 8px 6px; border-bottom: 1px solid #eee; cursor: pointer; }
+  dialog .foot { padding: 12px 16px; text-align: right; border-top: 1px solid #e5e5e5; }
+  .readonly-note { font-size: 12px; color: #6a6d70; padding: 0 16px 12px; }
+</style>
+</head>
+<body>
+<header>CokeOne DME Tool</header>
+<h2>DME Contract Master Search</h2>
+
+<div class="panel">
+  <h3>Searching Criteria</h3>
+  <div class="grid">
+    <label for="companyCode">Company Code:</label>
+    <div class="with-help">
+      <input id="companyCode" type="text">
+      <button class="vh" data-help="Company Code" aria-label="Company Code value help">⧉</button>
+    </div>
+
+    <label for="contractNo">DME Contract No.:</label>
+    <input id="contractNo" type="text">
+
+    <label for="paymentType">Payment type:</label>
+    <select id="paymentType">
+      <option value="">Select</option>
+      <option>Pre Pay</option>
+      <option>Post Pay</option>
+      <option>Spot Pay</option>
+      <option>Regular Pay</option>
+    </select>
+
+    <label for="calcType">Calculation Type:</label>
+    <select id="calcType">
+      <option value="">Select</option>
+      <option>Quantity x</option>
+      <option>Amount</option>
+    </select>
+
+    <label for="salesOffice">Sales Office Code:</label>
+    <div class="with-help">
+      <input id="salesOffice" type="text">
+      <button class="vh" data-help="Sales Office Code" aria-label="Sales Office Code value help">⧉</button>
+    </div>
+
+    <label for="payeeCode">Payee Code:</label>
+    <div class="with-help">
+      <input id="payeeCode" type="text">
+      <button class="vh" data-help="Payee Code" aria-label="Payee Code value help">⧉</button>
+    </div>
+
+    <label for="agreementStatus">Agreement Status:</label>
+    <select id="agreementStatus">
+      <option value="">Select</option>
+      <option>Approved by AR.Mgr</option>
+      <option>Pending</option>
+    </select>
+
+    <label for="paymentDate">Payment Date:</label>
+    <input id="paymentDate" type="date">
+
+    <label for="startDate">Contract Start Date:</label>
+    <input id="startDate" type="date">
+
+    <label for="endDate">Contract End Date:</label>
+    <input id="endDate" type="date">
+
+    <label for="createdBy">Created By:</label>
+    <input id="createdBy" type="text" readonly value="SYSTEM">
+
+    <label for="contractVersion">Contract Version:</label>
+    <input id="contractVersion" type="text" readonly value="V 4.5.0">
+  </div>
+</div>
+
+<div class="actions">
+  <button class="ghost" id="advanced">Advanced Filters</button>
+  <button class="primary" id="search">Search</button>
+  <button class="primary" id="save">Save</button>
+</div>
+<p class="readonly-note">Created By and Contract Version are display-only and must not be documented.</p>
+
+<dialog id="helpDialog">
+  <h4 id="helpTitle">Value Help</h4>
+  <div class="body">
+    <table>
+      <tbody>
+        <tr><td>2001</td><td>First result row</td></tr>
+        <tr><td>2002</td><td>Second result row</td></tr>
+        <tr><td>2003</td><td>Third result row</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot">
+    <button id="helpCancel">Cancel</button>
+    <button id="helpOk" class="primary">OK</button>
+  </div>
+</dialog>
+
+<dialog id="advancedDialog">
+  <h4>Advanced Filters</h4>
+  <div class="body">
+    <div class="grid" style="grid-template-columns:160px 1fr;">
+      <label for="accountKey">Account Key:</label>
+      <input id="accountKey" type="text">
+      <label for="taxIndicator">Tax Indicator:</label>
+      <select id="taxIndicator">
+        <option value="">Select</option>
+        <option>Taxable</option>
+        <option>Exempt</option>
+      </select>
+    </div>
+  </div>
+  <div class="foot"><button id="advClose">Cancel</button></div>
+</dialog>
+
+<script>
+  const helpDialog = document.getElementById('helpDialog');
+  const helpTitle = document.getElementById('helpTitle');
+  let activeField = null;
+
+  document.querySelectorAll('.vh').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeField = btn.previousElementSibling;
+      helpTitle.textContent = btn.dataset.help;
+      helpDialog.showModal();
+    });
+  });
+
+  helpDialog.querySelectorAll('tbody tr').forEach((row) => {
+    row.addEventListener('click', () => {
+      row.style.background = '#d6eaff';
+      if (activeField) activeField.value = row.cells[0].textContent;
+    });
+  });
+  document.getElementById('helpOk').addEventListener('click', () => helpDialog.close());
+  document.getElementById('helpCancel').addEventListener('click', () => helpDialog.close());
+
+  const advancedDialog = document.getElementById('advancedDialog');
+  document.getElementById('advanced').addEventListener('click', () => advancedDialog.showModal());
+  document.getElementById('advClose').addEventListener('click', () => advancedDialog.close());
+
+  // Search only filters; it must not be treated as a documentation point.
+  document.getElementById('search').addEventListener('click', () => {});
+  // Save would create a record in the real system; the engine must never click it.
+  document.getElementById('save').addEventListener('click', () => {
+    document.body.insertAdjacentHTML('beforeend',
+      '<p id="saved" style="color:red;padding:16px">RECORD SAVED — this must never happen</p>');
+  });
+</script>
+</body>
+</html>

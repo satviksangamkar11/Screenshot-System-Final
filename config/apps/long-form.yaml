@@ -1,0 +1,31 @@
+# Regression fixture: a long form inside an inner scroll container, as Fiori
+# lays out. Verifies "Full Page" is captured as consecutive viewport-sized
+# screenfuls (as the reference documents do) rather than one unreadable tall
+# image, and that scrolling works when the window itself does not scroll.
+
+name: long-form
+title: Long Form Test
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/long-form.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 8
+  maxPages: 3
+  maxDepth: 2
+  maxRunMs: 180000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 15000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

@@ -1,0 +1,55 @@
+# Request Customer Extended (MDG) — the workflow behind the reference
+# "Request New Customer extended" comparison document.
+#
+# The application presents a Customer Category chooser (Organization / Person)
+# at entry, preceded by a validation message dialog. Both are handled by the
+# engine: the message is acknowledged, and each category is explored as its own
+# branch.
+
+name: request-customer
+title: Request Customer Extended
+
+requiresAuth: true
+
+versions:
+  old:
+    url: https://rjgw3100.c1ccej.local:8500/flp?sap-client=100&sap-language=EN#RequestCustomerExtended-requestCustomer?MAXDUPREC=20&CATEGORY=&USMD_CREQ_TYPE=CUF1P1
+    storageState: auth/.storage/rjgw3100-c1ccej-local-8500-69a885.json
+  new:
+    url: https://vhc2jq4rci.rise.ccbji.co.jp:44300/sap/bc/ui2/flp?sap-client=100&sap-language=EN#RequestCustomerExtended-requestCustomer?CATEGORY=&MAXDUPREC=20&USMD_CREQ_TYPE=CUF1P1
+    storageState: auth/.storage/vhc2jq4rci-rise-ccbji-co-jp-44300-2b4bde.json
+
+# This is a master-data request application: submitting would create a real
+# change request, so every committing action is blocked.
+safety:
+  denyLabels:
+    - save
+    - submit
+    - send
+    - delete
+    - remove
+    - post
+    - confirm
+    - approve
+    - reject
+    - create
+    - check
+    - share
+  allowLabels:
+    - search
+    - execute
+    - go
+  strict: false
+
+budgets:
+  controlTimeoutMs: 20000
+  maxControlsPerPage: 150
+  maxPages: 40
+  maxDepth: 5
+  maxRunMs: 5400000
+  stabilityTimeoutMs: 15000
+  appReadyTimeoutMs: 180000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

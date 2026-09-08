@@ -1,0 +1,32 @@
+# Regression fixture: a UI5 page whose control registry is reachable only via
+# the legacy getCore().mElements path, and whose search fields start hidden
+# inside a collapsed panel. Guards the failure where every field was
+# discovered and then skipped as "not interactable (not visible)".
+
+name: collapsed-ui5-panel
+title: Collapsed UI5 Panel Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/collapsed-ui5-panel.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 15000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

@@ -1,0 +1,36 @@
+# Regression fixture: a value-help dialog carrying its own interactive
+# content (a text filter, a dropdown, a checkbox) above its result rows.
+#
+# Verifies two things:
+#  - the dialog's own interactive elements are explored and each earns its
+#    own point, rather than the dialog being documented as a single shot;
+#  - plain text inputs ("Plain Note", and the dialog's "City" filter) are
+#    still filled but produce no screenshot of their own.
+
+name: valuehelp-nested
+title: Value Help Nested Content Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/valuehelp-nested.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 30
+  maxPages: 5
+  maxDepth: 3
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 10000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

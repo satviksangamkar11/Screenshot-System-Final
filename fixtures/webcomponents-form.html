@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Web Components Form – Full Coverage</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  header { background: #354a5f; color: #fff; padding: 10px 16px; font-size: 15px; }
+  h2 { margin: 0; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e5e5e5; font-size: 17px; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .panel h3 { margin: 0 0 14px; font-size: 15px; color: #354a5f; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 12px 10px; align-items: center; max-width: 620px; }
+  ui5-label { font-size: 13px; text-align: right; display: block; padding-right: 4px; }
+  ui5-input, ui5-textarea, ui5-select, ui5-combobox, ui5-date-picker, ui5-time-picker,
+  ui5-datetime-picker, ui5-date-range-picker, ui5-checkbox, ui5-switch,
+  ui5-radio-button, ui5-segmented-button, ui5-file-uploader,
+  ui5-multi-combobox, ui5-multi-input, ui5-slider, ui5-range-slider,
+  ui5-step-input, ui5-rating-indicator { display: block; }
+  ui5-button, ui5-toggle-button, ui5-link { display: inline-block; }
+  .actions { padding: 12px 16px; text-align: right; display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<header>Web Components Demo – Full FPM Coverage</header>
+<h2>Sample Form</h2>
+
+<!-- ── Text / Numeric inputs ─────────────────────────────────────────── -->
+<div class="panel">
+  <h3>Text &amp; Numeric Fields</h3>
+  <div class="grid">
+    <ui5-label for="first-name">First Name</ui5-label>
+    <ui5-input id="first-name" placeholder="Enter first name" required></ui5-input>
+
+    <ui5-label for="notes">Notes</ui5-label>
+    <ui5-textarea id="notes" placeholder="Enter notes…"></ui5-textarea>
+
+    <ui5-label for="quantity">Quantity</ui5-label>
+    <ui5-step-input id="quantity" min="0" max="100" step="1"></ui5-step-input>
+
+    <ui5-label for="priority">Priority (0–10)</ui5-label>
+    <ui5-slider id="priority" min="0" max="10"></ui5-slider>
+
+    <ui5-label for="price-range">Price Range</ui5-label>
+    <ui5-range-slider id="price-range" min="0" max="1000"></ui5-range-slider>
+
+    <ui5-label for="rating">Rating</ui5-label>
+    <ui5-rating-indicator id="rating"></ui5-rating-indicator>
+  </div>
+</div>
+
+<!-- ── Dropdowns / Selection ──────────────────────────────────────────── -->
+<div class="panel">
+  <h3>Dropdowns &amp; Multi-Selection</h3>
+  <div class="grid">
+    <ui5-label for="country">Country</ui5-label>
+    <ui5-select id="country"></ui5-select>
+
+    <ui5-label for="currency">Currency (type to search)</ui5-label>
+    <ui5-combobox id="currency" placeholder="Search currency…"></ui5-combobox>
+
+    <ui5-label for="tags">Tags (multi)</ui5-label>
+    <ui5-multi-combobox id="tags"></ui5-multi-combobox>
+
+    <ui5-label for="assignees">Assignees (tokens)</ui5-label>
+    <ui5-multi-input id="assignees" placeholder="Add assignees…"></ui5-multi-input>
+  </div>
+</div>
+
+<!-- ── Date / Time ────────────────────────────────────────────────────── -->
+<div class="panel">
+  <h3>Date &amp; Time Fields</h3>
+  <div class="grid">
+    <ui5-label for="start-date">Start Date</ui5-label>
+    <ui5-date-picker id="start-date" placeholder="MM/DD/YYYY"></ui5-date-picker>
+
+    <ui5-label for="booking-range">Booking Period</ui5-label>
+    <ui5-date-range-picker id="booking-range" placeholder="MM/DD/YYYY – MM/DD/YYYY"></ui5-date-range-picker>
+
+    <ui5-label for="meeting-time">Meeting Time</ui5-label>
+    <ui5-time-picker id="meeting-time" placeholder="HH:MM AM"></ui5-time-picker>
+  </div>
+</div>
+
+<!-- ── Boolean Toggles ───────────────────────────────────────────────── -->
+<div class="panel">
+  <h3>Boolean &amp; Choice Fields</h3>
+  <div class="grid">
+    <ui5-label for="subscribe">Subscribe to Newsletter</ui5-label>
+    <ui5-checkbox id="subscribe"></ui5-checkbox>
+
+    <ui5-label for="dark-mode">Dark Mode</ui5-label>
+    <ui5-switch id="dark-mode"></ui5-switch>
+
+    <ui5-label for="gender">Contact Method</ui5-label>
+    <ui5-radio-button id="gender" name="contact-method"></ui5-radio-button>
+
+    <ui5-label for="view-mode">View As</ui5-label>
+    <ui5-segmented-button id="view-mode"></ui5-segmented-button>
+  </div>
+</div>
+
+<!-- ── File Upload ───────────────────────────────────────────────────── -->
+<div class="panel">
+  <h3>File Upload</h3>
+  <div class="grid">
+    <ui5-label for="attachment">Attachment</ui5-label>
+    <ui5-file-uploader id="attachment"></ui5-file-uploader>
+  </div>
+</div>
+
+<!-- ── Actions ───────────────────────────────────────────────────────── -->
+<div class="actions">
+  <ui5-link id="help-link">Help</ui5-link>
+  <ui5-toggle-button id="preview-btn">Preview</ui5-toggle-button>
+  <ui5-button id="save-btn">Save</ui5-button>
+</div>
+
+<script>
+'use strict';
+
+/* ─── helpers ─── */
+function removeOverlay(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+/* ─── ui5-input ─── */
+class Ui5Input extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; align-items: center; border: 1px solid #89919a; border-radius: 3px; background: #fff; }
+        input { padding: 6px 8px; border: none; outline: none;
+                font-size: 13px; flex: 1; box-sizing: border-box; font-family: inherit; background: transparent; }
+        .vhbtn { border: none; background: none; cursor: pointer; padding: 0 6px; font-size: 13px; color: #0a6ed1; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap">
+        <input type="text">
+        ${this.hasAttribute('show-value-help') ? '<button class="ui5-input-value-help-button vhbtn" type="button">⊕</button>' : ''}
+      </div>`;
+    this._input = sr.querySelector('input');
+    if (this.getAttribute('placeholder')) this._input.placeholder = this.getAttribute('placeholder');
+    if (this.hasAttribute('required')) this._input.required = true;
+  }
+  get value() { return this._input.value; }
+  set value(v) {
+    this._input.value = v;
+    this._input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+customElements.define('ui5-input', Ui5Input);
+
+/* ─── ui5-textarea ─── */
+class Ui5Textarea extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        textarea { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px;
+                   font-size: 13px; width: 100%; min-height: 60px; box-sizing: border-box;
+                   font-family: inherit; resize: vertical; }
+        textarea:focus { outline: 2px solid #0a6ed1; border-color: #0a6ed1; }
+      </style>
+      <textarea></textarea>`;
+    this._ta = sr.querySelector('textarea');
+    if (this.getAttribute('placeholder')) this._ta.placeholder = this.getAttribute('placeholder');
+  }
+  get value() { return this._ta.value; }
+  set value(v) { this._ta.value = v; }
+}
+customElements.define('ui5-textarea', Ui5Textarea);
+
+/* ─── ui5-step-input ─── */
+class Ui5StepInput extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; border: 1px solid #89919a; border-radius: 3px; overflow: hidden; }
+        button { border: none; background: #f5f5f5; cursor: pointer; padding: 0 10px;
+                 font-size: 16px; color: #32363a; line-height: 1; }
+        button:hover { background: #e0e0e0; }
+        input { border: none; border-left: 1px solid #89919a; border-right: 1px solid #89919a;
+                text-align: center; font-size: 13px; width: 60px; font-family: inherit; }
+        input:focus { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap">
+        <button type="button" class="dec">−</button>
+        <input type="number" value="0">
+        <button type="button" class="inc">+</button>
+      </div>`;
+    this._input = sr.querySelector('input');
+    const min = parseFloat(this.getAttribute('min') ?? '-Infinity');
+    const max = parseFloat(this.getAttribute('max') ?? 'Infinity');
+    const step = parseFloat(this.getAttribute('step') ?? '1');
+    if (!isNaN(min)) this._input.min = String(min);
+    if (!isNaN(max)) this._input.max = String(max);
+    sr.querySelector('.dec').addEventListener('click', () => {
+      this._input.value = String(Math.max(min, parseFloat(this._input.value || '0') - step));
+    });
+    sr.querySelector('.inc').addEventListener('click', () => {
+      this._input.value = String(Math.min(max, parseFloat(this._input.value || '0') + step));
+    });
+  }
+  get value() { return parseFloat(this._input.value); }
+}
+customElements.define('ui5-step-input', Ui5StepInput);
+
+/* ─── ui5-slider ─── */
+class Ui5Slider extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; padding: 8px 0; }
+        input[type="range"] { width: 100%; accent-color: #0a6ed1; cursor: pointer; }
+      </style>
+      <input type="range">`;
+    const inp = sr.querySelector('input');
+    inp.min = this.getAttribute('min') ?? '0';
+    inp.max = this.getAttribute('max') ?? '100';
+    inp.value = this.getAttribute('value') ?? inp.min;
+  }
+  get value() { return parseFloat(this.shadowRoot.querySelector('input').value); }
+}
+customElements.define('ui5-slider', Ui5Slider);
+
+/* ─── ui5-range-slider ─── */
+class Ui5RangeSlider extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; padding: 8px 0; }
+        .wrap { position: relative; height: 32px; display: flex; align-items: center; }
+        input[type="range"] { width: 100%; accent-color: #0a6ed1; cursor: pointer; }
+        .hint { font-size: 11px; color: #6a6d70; text-align: center; font-family: Arial; }
+      </style>
+      <div class="wrap"><input type="range" role="slider" aria-label="Range start"></div>
+      <div class="hint">Range slider (start/end)</div>`;
+    const inp = sr.querySelector('input');
+    inp.min = this.getAttribute('min') ?? '0';
+    inp.max = this.getAttribute('max') ?? '100';
+    inp.value = this.getAttribute('start-value') ?? inp.min;
+  }
+}
+customElements.define('ui5-range-slider', Ui5RangeSlider);
+
+/* ─── ui5-rating-indicator ─── */
+class Ui5RatingIndicator extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .stars { display: flex; gap: 4px; }
+        .star { font-size: 22px; cursor: pointer; color: #c2c2c2; transition: color .1s; }
+        .star.lit { color: #f0ab00; }
+      </style>
+      <div class="stars" role="slider" aria-label="Rating" aria-valuemin="0" aria-valuemax="5"></div>`;
+    this._rating = 0;
+    const wrap = sr.querySelector('.stars');
+    for (let i = 1; i <= 5; i++) {
+      const s = document.createElement('span');
+      s.className = 'star';
+      s.textContent = '★';
+      s.dataset.v = String(i);
+      s.addEventListener('click', () => { this._rating = i; this._render(wrap); });
+      s.addEventListener('mouseover', () => this._renderHover(wrap, i));
+      s.addEventListener('mouseout', () => this._render(wrap));
+      wrap.appendChild(s);
+    }
+  }
+  _render(wrap) {
+    wrap.querySelectorAll('.star').forEach((s) => {
+      s.classList.toggle('lit', parseInt(s.dataset.v, 10) <= this._rating);
+    });
+  }
+  _renderHover(wrap, v) {
+    wrap.querySelectorAll('.star').forEach((s) => {
+      s.classList.toggle('lit', parseInt(s.dataset.v, 10) <= v);
+    });
+  }
+  get value() { return this._rating; }
+}
+customElements.define('ui5-rating-indicator', Ui5RatingIndicator);
+
+/* ─── ui5-select ─── */
+class Ui5Select extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open' });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .display { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px;
+                   font-size: 13px; background: #fff; cursor: pointer; display: flex;
+                   justify-content: space-between; align-items: center; user-select: none; }
+        .display:hover { border-color: #0a6ed1; }
+        .arrow { font-size: 10px; color: #6a6d70; }
+      </style>
+      <div class="display"><span class="val">Select…</span><span class="arrow">▼</span></div>`;
+    this._display = sr.querySelector('.val');
+    this.addEventListener('click', () => this._toggle());
+  }
+  _toggle() {
+    const listId = `wc-sel-${this.id}`;
+    if (document.getElementById(listId)) { removeOverlay(listId); return; }
+    const list = document.createElement('div');
+    list.id = listId;
+    list.setAttribute('role', 'listbox');
+    list.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:3px;z-index:9999;' +
+      'min-width:150px;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+    const rect = this.getBoundingClientRect();
+    list.style.top = (rect.bottom + 2) + 'px';
+    list.style.left = rect.left + 'px';
+    list.style.minWidth = rect.width + 'px';
+    ['Germany', 'United States', 'India', 'Japan'].forEach((text) => {
+      const opt = document.createElement('div');
+      opt.setAttribute('role', 'option');
+      opt.textContent = text;
+      opt.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;font-family:Arial,sans-serif';
+      opt.addEventListener('mouseover', () => { opt.style.background = '#e9f0fb'; });
+      opt.addEventListener('mouseout', () => { opt.style.background = ''; });
+      opt.addEventListener('click', (e) => { e.stopPropagation(); this._display.textContent = text; removeOverlay(listId); });
+      list.appendChild(opt);
+    });
+    document.body.appendChild(list);
+  }
+}
+customElements.define('ui5-select', Ui5Select);
+
+/* ─── ui5-combobox ─── */
+class Ui5Combobox extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; border: 1px solid #89919a; border-radius: 3px; }
+        input { border: none; outline: none; padding: 6px 8px; font-size: 13px; flex: 1; font-family: inherit; }
+        .arrow { border: none; background: none; padding: 0 8px; cursor: pointer; font-size: 11px; color: #6a6d70; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap"><input type="text"><button class="arrow" type="button">▼</button></div>`;
+    this._input = sr.querySelector('input');
+    if (this.getAttribute('placeholder')) this._input.placeholder = this.getAttribute('placeholder');
+    sr.querySelector('.arrow').addEventListener('click', (e) => { e.stopPropagation(); this._toggle(); });
+  }
+  _toggle() {
+    const listId = `wc-combo-${this.id}`;
+    if (document.getElementById(listId)) { removeOverlay(listId); return; }
+    const list = document.createElement('div');
+    list.id = listId;
+    list.setAttribute('role', 'listbox');
+    list.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:3px;z-index:9999;' +
+      'min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+    const rect = this.getBoundingClientRect();
+    list.style.top = (rect.bottom + 2) + 'px';
+    list.style.left = rect.left + 'px';
+    list.style.minWidth = rect.width + 'px';
+    ['USD', 'EUR', 'GBP', 'INR', 'JPY'].forEach((text) => {
+      const opt = document.createElement('div');
+      opt.setAttribute('role', 'option');
+      opt.textContent = text;
+      opt.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;font-family:Arial,sans-serif';
+      opt.addEventListener('mouseover', () => { opt.style.background = '#e9f0fb'; });
+      opt.addEventListener('mouseout', () => { opt.style.background = ''; });
+      opt.addEventListener('click', (e) => { e.stopPropagation(); this._input.value = text; removeOverlay(listId); });
+      list.appendChild(opt);
+    });
+    document.body.appendChild(list);
+  }
+}
+customElements.define('ui5-combobox', Ui5Combobox);
+
+/* ─── ui5-multi-combobox ─── */
+class Ui5MultiCombobox extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open' });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .display { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px;
+                   font-size: 13px; background: #fff; cursor: pointer; display: flex;
+                   justify-content: space-between; align-items: center; user-select: none; }
+        .arrow { font-size: 10px; color: #6a6d70; }
+        .ui5-multi-combobox-toggle-button { border: none; background: none; cursor: pointer; font-size: 11px; padding: 0 4px; }
+      </style>
+      <div class="display"><span class="val">Select tags…</span><button class="ui5-multi-combobox-toggle-button" type="button">▼</button></div>`;
+    this._display = sr.querySelector('.val');
+    this._selected = [];
+    sr.querySelector('.ui5-multi-combobox-toggle-button').addEventListener('click', (e) => { e.stopPropagation(); this._toggle(); });
+    this.addEventListener('click', () => this._toggle());
+  }
+  _toggle() {
+    const listId = `wc-mcombo-${this.id}`;
+    if (document.getElementById(listId)) { removeOverlay(listId); return; }
+    const list = document.createElement('div');
+    list.id = listId;
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-multiselectable', 'true');
+    list.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:3px;z-index:9999;' +
+      'min-width:160px;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+    const rect = this.getBoundingClientRect();
+    list.style.top = (rect.bottom + 2) + 'px';
+    list.style.left = rect.left + 'px';
+    list.style.minWidth = rect.width + 'px';
+    ['Finance', 'HR', 'Logistics', 'Procurement'].forEach((text) => {
+      const opt = document.createElement('div');
+      opt.setAttribute('role', 'option');
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.style.marginRight = '6px';
+      opt.appendChild(chk);
+      opt.appendChild(document.createTextNode(text));
+      opt.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;font-family:Arial,sans-serif;display:flex;align-items:center';
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chk.checked = !chk.checked;
+        this._selected = chk.checked
+          ? [...this._selected, text]
+          : this._selected.filter((s) => s !== text);
+        this._display.textContent = this._selected.length ? this._selected.join(', ') : 'Select tags…';
+        removeOverlay(listId);
+      });
+      list.appendChild(opt);
+    });
+    document.body.appendChild(list);
+  }
+}
+customElements.define('ui5-multi-combobox', Ui5MultiCombobox);
+
+/* ─── ui5-multi-input ─── */
+class Ui5MultiInput extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { border: 1px solid #89919a; border-radius: 3px; display: flex; flex-wrap: wrap;
+                align-items: center; gap: 4px; padding: 4px 6px; background: #fff; min-height: 36px; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+        input { border: none; outline: none; font-size: 13px; flex: 1; min-width: 80px; font-family: inherit; }
+        .token { background: #e0edff; border-radius: 12px; padding: 2px 8px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .token-remove { background: none; border: none; cursor: pointer; font-size: 11px; color: #6a6d70; padding: 0; }
+        .ui5-multi-input-toggle-button { border: none; background: none; cursor: pointer; padding: 0 4px; font-size: 11px; color: #6a6d70; }
+      </style>
+      <div class="wrap">
+        <input type="text">
+        <button class="ui5-multi-input-toggle-button" type="button">▼</button>
+      </div>`;
+    const inp = sr.querySelector('input');
+    const wrap = sr.querySelector('.wrap');
+    if (this.getAttribute('placeholder')) inp.placeholder = this.getAttribute('placeholder');
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        const val = inp.value.trim();
+        const tok = document.createElement('span');
+        tok.className = 'token';
+        tok.textContent = val;
+        const rm = document.createElement('button');
+        rm.className = 'token-remove';
+        rm.textContent = '×';
+        rm.addEventListener('click', () => tok.remove());
+        tok.appendChild(rm);
+        wrap.insertBefore(tok, inp);
+        inp.value = '';
+        e.preventDefault();
+      }
+    });
+  }
+}
+customElements.define('ui5-multi-input', Ui5MultiInput);
+
+/* ─── ui5-date-picker ─── */
+class Ui5DatePicker extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; gap: 4px; border: 1px solid #89919a; border-radius: 3px; }
+        input { padding: 6px 8px; border: none; outline: none;
+                font-size: 13px; flex: 1; box-sizing: border-box; font-family: inherit; }
+        .ui5-date-picker-toggle-button { border: none; border-left: 1px solid #89919a; background: #fff;
+                 border-radius: 0 3px 3px 0; cursor: pointer; padding: 0 8px; font-size: 13px; }
+        .ui5-date-picker-toggle-button:hover { background: #f0f0f0; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap">
+        <input type="text" placeholder="${this.getAttribute('placeholder') || 'MM/DD/YYYY'}">
+        <button class="ui5-date-picker-toggle-button" type="button">📅</button>
+      </div>`;
+    this._input = sr.querySelector('input');
+    sr.querySelector('.ui5-date-picker-toggle-button').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._openCalendar();
+    });
+  }
+  get value() { return this._input.value; }
+  set value(v) { this._input.value = v; }
+  _openCalendar() {
+    const dialogId = `wc-cal-${this.id}`;
+    if (document.getElementById(dialogId)) { removeOverlay(dialogId); return; }
+    const dialog = document.createElement('div');
+    dialog.id = dialogId;
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-label', 'Date picker calendar');
+    dialog.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:4px;z-index:9999;' +
+      'padding:10px;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+    const rect = this.getBoundingClientRect();
+    dialog.style.top = (rect.bottom + 4) + 'px';
+    dialog.style.left = rect.left + 'px';
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const mm = String(month + 1).padStart(2, '0');
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:13px;font-weight:600;margin-bottom:6px;text-align:center';
+    hdr.textContent = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+    dialog.appendChild(hdr);
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(7,32px);gap:2px';
+    const inp = this._input;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      const dd = String(d).padStart(2, '0');
+      cell.className = 'sapUiCalItem';
+      cell.setAttribute('data-sap-day', `${year}${mm}${dd}`);
+      cell.textContent = String(d);
+      cell.style.cssText = 'padding:5px 2px;text-align:center;cursor:pointer;border-radius:4px;font-size:12px;font-family:Arial,sans-serif';
+      if (d === today) { cell.style.fontWeight = '600'; cell.style.border = '1px solid #0a6ed1'; }
+      cell.addEventListener('mouseover', () => { cell.style.background = '#e9f0fb'; });
+      cell.addEventListener('mouseout', () => { cell.style.background = ''; });
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        inp.value = `${mm}/${dd}/${year}`;
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        removeOverlay(dialogId);
+      });
+      grid.appendChild(cell);
+    }
+    dialog.appendChild(grid);
+    document.body.appendChild(dialog);
+  }
+}
+customElements.define('ui5-date-picker', Ui5DatePicker);
+
+/* ─── ui5-date-range-picker ─── */
+class Ui5DateRangePicker extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; border: 1px solid #89919a; border-radius: 3px; }
+        input { padding: 6px 8px; border: none; outline: none; font-size: 13px; flex: 1; font-family: inherit; }
+        .ui5-date-range-picker-toggle-button { border: none; border-left: 1px solid #89919a;
+                 background: #fff; cursor: pointer; padding: 0 8px; font-size: 13px;
+                 border-radius: 0 3px 3px 0; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap">
+        <input type="text" placeholder="${this.getAttribute('placeholder') || 'Start – End'}">
+        <button class="ui5-date-range-picker-toggle-button" type="button">📅</button>
+      </div>`;
+    this._input = sr.querySelector('input');
+    sr.querySelector('.ui5-date-range-picker-toggle-button').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._open();
+    });
+  }
+  _open() {
+    const id = `wc-drpicker-${this.id}`;
+    if (document.getElementById(id)) { removeOverlay(id); return; }
+    const dlg = document.createElement('div');
+    dlg.id = id;
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-label', 'Date range picker');
+    dlg.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:4px;z-index:9999;' +
+      'padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);font-family:Arial,sans-serif;font-size:13px';
+    const rect = this.getBoundingClientRect();
+    dlg.style.top = (rect.bottom + 4) + 'px';
+    dlg.style.left = rect.left + 'px';
+    dlg.innerHTML = '<div style="color:#6a6d70">Select start and end date</div><div style="margin-top:8px;display:flex;gap:6px"><input type="text" placeholder="Start" style="border:1px solid #89919a;padding:4px 6px;border-radius:3px"><input type="text" placeholder="End" style="border:1px solid #89919a;padding:4px 6px;border-radius:3px"></div>';
+    const [startInp, endInp] = dlg.querySelectorAll('input');
+    const inp = this._input;
+    endInp.addEventListener('change', () => {
+      if (startInp.value && endInp.value) {
+        inp.value = `${startInp.value} – ${endInp.value}`;
+        removeOverlay(id);
+      }
+    });
+    document.body.appendChild(dlg);
+  }
+}
+customElements.define('ui5-date-range-picker', Ui5DateRangePicker);
+
+/* ─── ui5-time-picker ─── */
+class Ui5TimePicker extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { display: flex; border: 1px solid #89919a; border-radius: 3px; }
+        input { padding: 6px 8px; border: none; outline: none; font-size: 13px; flex: 1; font-family: inherit; }
+        .ui5-time-picker-toggle-button { border: none; border-left: 1px solid #89919a;
+                 background: #fff; cursor: pointer; padding: 0 8px; font-size: 13px;
+                 border-radius: 0 3px 3px 0; }
+        :host(:focus-within) .wrap { outline: 2px solid #0a6ed1; }
+      </style>
+      <div class="wrap">
+        <input type="text" placeholder="${this.getAttribute('placeholder') || 'HH:MM'}">
+        <button class="ui5-time-picker-toggle-button" type="button">🕐</button>
+      </div>`;
+    this._input = sr.querySelector('input');
+    sr.querySelector('.ui5-time-picker-toggle-button').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this._open();
+    });
+  }
+  _open() {
+    const id = `wc-timepicker-${this.id}`;
+    if (document.getElementById(id)) { removeOverlay(id); return; }
+    const dlg = document.createElement('div');
+    dlg.id = id;
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-label', 'Time picker');
+    dlg.style.cssText =
+      'position:fixed;background:#fff;border:1px solid #89919a;border-radius:4px;z-index:9999;' +
+      'padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);font-family:Arial,sans-serif;font-size:13px';
+    const rect = this.getBoundingClientRect();
+    dlg.style.top = (rect.bottom + 4) + 'px';
+    dlg.style.left = rect.left + 'px';
+    const inp = this._input;
+    dlg.innerHTML = '<div style="color:#6a6d70;margin-bottom:8px">Select time</div>' +
+      '<div style="display:flex;gap:4px;align-items:center">' +
+      '<input type="number" min="0" max="23" value="9" style="width:48px;border:1px solid #89919a;padding:4px;border-radius:3px;text-align:center">:<input type="number" min="0" max="59" value="0" style="width:48px;border:1px solid #89919a;padding:4px;border-radius:3px;text-align:center">' +
+      '<button type="button" style="background:#0a6ed1;color:#fff;border:none;border-radius:3px;padding:4px 8px;cursor:pointer">OK</button></div>';
+    const [hInp, mInp] = dlg.querySelectorAll('input');
+    dlg.querySelector('button').addEventListener('click', () => {
+      inp.value = `${String(hInp.value).padStart(2,'0')}:${String(mInp.value).padStart(2,'0')}`;
+      removeOverlay(id);
+    });
+    document.body.appendChild(dlg);
+  }
+}
+customElements.define('ui5-time-picker', Ui5TimePicker);
+
+/* ─── ui5-checkbox ─── */
+class Ui5Checkbox extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-family: Arial,sans-serif; }
+        input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0a6ed1; }
+      </style>
+      <label><input type="checkbox"><slot></slot></label>`;
+    this._cb = sr.querySelector('input');
+  }
+  get checked() { return this._cb.checked; }
+  set checked(v) { this._cb.checked = v; }
+}
+customElements.define('ui5-checkbox', Ui5Checkbox);
+
+/* ─── ui5-switch ─── */
+class Ui5Switch extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .track { width: 44px; height: 24px; background: #c2c2c2; border-radius: 12px; cursor: pointer;
+                 position: relative; transition: background .2s; }
+        .track.on { background: #0a6ed1; }
+        .thumb { width: 20px; height: 20px; background: #fff; border-radius: 50%; position: absolute;
+                 top: 2px; left: 2px; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+        .track.on .thumb { left: 22px; }
+      </style>
+      <div class="track" role="switch" aria-checked="false" tabindex="0">
+        <div class="thumb"></div>
+      </div>`;
+    const track = sr.querySelector('.track');
+    track.addEventListener('click', () => {
+      const on = track.classList.toggle('on');
+      track.setAttribute('aria-checked', String(on));
+      this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    track.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') { track.click(); e.preventDefault(); }
+    });
+  }
+  get checked() { return this.shadowRoot.querySelector('.track').classList.contains('on'); }
+}
+customElements.define('ui5-switch', Ui5Switch);
+
+/* ─── ui5-radio-button ─── */
+class Ui5RadioButton extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; font-family: Arial,sans-serif; }
+        input[type="radio"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0a6ed1; }
+      </style>
+      <label><input type="radio"><slot></slot></label>`;
+    this._radio = sr.querySelector('input');
+    if (this.getAttribute('name')) this._radio.name = this.getAttribute('name');
+  }
+  get checked() { return this._radio.checked; }
+  set checked(v) { this._radio.checked = v; }
+}
+customElements.define('ui5-radio-button', Ui5RadioButton);
+
+/* ─── ui5-segmented-button ─── */
+class Ui5SegmentedButton extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open' });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .seg { display: inline-flex; border: 1px solid #89919a; border-radius: 3px; overflow: hidden; font-family: Arial,sans-serif; }
+        button { border: none; border-right: 1px solid #89919a; background: #fff; padding: 6px 16px;
+                 cursor: pointer; font-size: 13px; color: #32363a; }
+        button:last-child { border-right: none; }
+        button.selected { background: #0a6ed1; color: #fff; }
+        button:hover:not(.selected) { background: #e9f0fb; }
+      </style>
+      <div class="seg" role="group">
+        <button type="button" class="selected">List</button>
+        <button type="button">Grid</button>
+        <button type="button">Chart</button>
+      </div>`;
+    sr.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        sr.querySelectorAll('button').forEach((b) => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+  }
+}
+customElements.define('ui5-segmented-button', Ui5SegmentedButton);
+
+/* ─── ui5-file-uploader ─── */
+class Ui5FileUploader extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open' });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        .wrap { border: 1px dashed #89919a; border-radius: 3px; padding: 10px 12px;
+                font-size: 13px; color: #6a6d70; cursor: pointer; display: flex;
+                align-items: center; gap: 8px; font-family: Arial,sans-serif; }
+        .wrap:hover { border-color: #0a6ed1; color: #0a6ed1; }
+        input { display: none; }
+      </style>
+      <label class="wrap"><span>📎</span><span>Browse files…</span><input type="file"></label>`;
+  }
+}
+customElements.define('ui5-file-uploader', Ui5FileUploader);
+
+/* ─── ui5-button ─── */
+class Ui5Button extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: inline-block; }
+        button { background: #0a6ed1; color: #fff; border: none; padding: 8px 20px;
+                 border-radius: 3px; cursor: pointer; font-size: 13px; font-family: inherit; }
+        button:hover { background: #085caf; }
+      </style>
+      <button type="button"><slot></slot></button>`;
+  }
+}
+customElements.define('ui5-button', Ui5Button);
+
+/* ─── ui5-toggle-button ─── */
+class Ui5ToggleButton extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: inline-block; }
+        button { background: #fff; color: #0a6ed1; border: 1px solid #0a6ed1; padding: 8px 20px;
+                 border-radius: 3px; cursor: pointer; font-size: 13px; font-family: inherit; }
+        button.pressed { background: #0a6ed1; color: #fff; }
+        button:hover:not(.pressed) { background: #e9f0fb; }
+      </style>
+      <button type="button"><slot></slot></button>`;
+    const btn = sr.querySelector('button');
+    btn.addEventListener('click', () => {
+      this._pressed = !this._pressed;
+      btn.classList.toggle('pressed', this._pressed);
+      btn.setAttribute('aria-pressed', String(this._pressed));
+    });
+    this._pressed = false;
+  }
+  get pressed() { return this._pressed; }
+}
+customElements.define('ui5-toggle-button', Ui5ToggleButton);
+
+/* ─── ui5-link ─── */
+class Ui5Link extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    sr.innerHTML = `
+      <style>
+        :host { display: inline; }
+        a { color: #0a6ed1; text-decoration: none; font-size: 13px; font-family: inherit; cursor: pointer; }
+        a:hover { text-decoration: underline; }
+      </style>
+      <a href="#" tabindex="0"><slot></slot></a>`;
+    sr.querySelector('a').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.dispatchEvent(new Event('click', { bubbles: true }));
+    });
+  }
+}
+customElements.define('ui5-link', Ui5Link);
+
+/* ─── ui5-label (required for association) ─── */
+class Ui5Label extends HTMLElement {
+  constructor() {
+    super();
+    const sr = this.attachShadow({ mode: 'open' });
+    sr.innerHTML = `
+      <style>
+        :host { display: block; }
+        label { font-size: 13px; font-family: Arial,sans-serif; color: #6a6d70; }
+      </style>
+      <label><slot></slot></label>`;
+  }
+}
+customElements.define('ui5-label', Ui5Label);
+</script>
+</body>
+</html>

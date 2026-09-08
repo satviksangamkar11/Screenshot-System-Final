@@ -1,0 +1,39 @@
+# Regression fixture: the Horizon-theme side-navigation menu.
+#
+# Reproduces the shell chrome documented in the RequestSupplierExtended
+# old-vs-new comparison: the upgraded launchpad adds a side-navigation menu
+# listing every application the user can reach. It renders OUTSIDE
+# #shell-header (in UI5's static area), so the original header-only guard
+# missed it and the explorer would click each entry, leaving the application
+# for an unrelated one -- the shell-loop crash again, by a different route.
+#
+# Expected: no side-nav entry is discovered; the application's own Form/Copy
+# tabs and their fields still are; the disabled "Address" field is skipped.
+
+name: horizon-shell-nav
+title: Horizon Shell Navigation Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/horizon-shell-nav.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 40
+  maxPages: 10
+  maxDepth: 3
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 10000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

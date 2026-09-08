@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tabbed Sections Fixture</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  [role="tablist"] { display: flex; gap: 4px; border-bottom: 1px solid #ccc; margin-bottom: 16px; }
+  [role="tab"] { padding: 8px 16px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; background: #eee; }
+  [role="tab"][aria-selected="true"] { background: #fff; font-weight: bold; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .grid { display: grid; grid-template-columns: 160px 1fr; gap: 10px; max-width: 500px; margin-bottom: 10px; }
+  h3 { margin: 16px 0 6px; }
+</style>
+</head>
+<body>
+<h2>Request New Customer (tabbed fixture)</h2>
+
+<div role="tablist">
+  <div role="tab" aria-selected="true" data-target="formPanel">Form</div>
+  <div role="tab" aria-selected="false" data-target="copyPanel">Copy</div>
+  <div role="tab" aria-selected="false" data-target="attachPanel">Attachments</div>
+</div>
+
+<div id="formPanel" class="panel active">
+  <section>
+    <h3>General</h3>
+    <div class="grid">
+      <label for="dueDate">Due Date:</label>
+      <input id="dueDate" type="date">
+      <label for="rfaReason">RFA Reason:</label>
+      <select id="rfaReason"><option value="">Select</option><option>Repair</option><option>New</option></select>
+    </div>
+  </section>
+</div>
+
+<div id="copyPanel" class="panel">
+  <section>
+    <h3>Standard</h3>
+    <div class="grid">
+      <label for="accountGroup">Account Group:</label>
+      <select id="accountGroup"><option value="">Select</option><option>RS Dealer</option></select>
+      <label for="salesOffice">Sales Office:</label>
+      <input id="salesOffice" type="text">
+    </div>
+  </section>
+</div>
+
+<div id="attachPanel" class="panel">
+  <h3>Files</h3>
+  <div class="grid">
+    <label for="attachment">Attachment:</label>
+    <input id="attachment" type="file">
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[role="tab"]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('[role="tab"]').forEach((t) => t.setAttribute('aria-selected', 'false'));
+      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+      tab.setAttribute('aria-selected', 'true');
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

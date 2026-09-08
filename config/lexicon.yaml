@@ -1,0 +1,103 @@
+# Canonical label normalisation.
+#
+# Two independent traversals (old and new) must converge on identical labels for
+# fields that did not actually change. Keys are raw labels lowercased with
+# whitespace collapsed and trailing punctuation (":" / "*") stripped; values are
+# the canonical form written into the document.
+#
+# Seeded from the vocabulary observed in the reference documents.
+
+canonical:
+  # Organisational codes
+  company code: Company Code
+  companycode: Company Code
+  sales office code: Sales Office Code
+  sales office: Sales Office
+  sales organization: Sales Organization
+  cost center code: Cost Center Code
+  plant code: Plant Code
+  delivery plant: Delivery Plant
+  bottler code: Bottler Code
+  bottler account: Bottler Account
+  bp group: BP Group
+  account group: Account Group
+  trade group: Trade Group
+  senden group: Senden Group
+
+  # People / roles
+  contract person code: Contract Person Code
+  contract person c...: Contract Person Code
+  entered person code: Entered Person Code
+  ar checker code: AR Checker Code
+  ar approver code: AR Approver Code
+  payee code: Payee Code
+  dme payee code: DME Payee Code
+  reported by: Reported by
+
+  # Payment
+  payment type: Payment Type
+  payment method: Payment Method
+  payment frequency: Payment Frequency
+  payment count: Payment Count
+  payment cycle: Payment Cycle
+  payment date: Payment Date
+  payment term: Payment Term
+  payment route code: Payment Route Code
+  payment location: Payment Location
+  payment base month: Payment Base Month
+  payment month: Payment Month
+  paymenttaxtype: Payment Tax Type
+  payment tax type: Payment Tax Type
+  payment rounding type: Payment Rounding Type
+  account key: Account Key
+  tax indicator: Tax Indicator
+  calculation type: Calculation Type
+  fixed rebate amount: Fixed Rebate Amount
+  cut-off timing: Cut-Off Timing
+  agreement status: Agreement Status
+
+  # Dates
+  due date: Due Date
+  start date: Start Date
+  end date: End Date
+  contract start date: Contract Start Date
+  contract end date: Contract End Date
+  work order period: Work Order Period
+  repair reception date(from): Repair reception date(From)
+  repair reception date(to): Repair reception date(To)
+
+  # Banking
+  bank: Bank
+  bank control keys: Bank Control Keys
+  commission bank fee code: Commission Bank Fee Code
+  head office account code: Head Office Account Code
+  invoice no: Invoice No
+
+  # Documents / logistics
+  dme contract no: DME Contract No
+  order type: Order Type
+  status: Status
+  function location: Function Location
+  functional location: Functional Location
+  equipment: Equipment
+  equipment description: Equipment Description
+  equipment query: Equipment Query
+  serial number: Serial Number
+  completion flag: Completion Flag
+  logistics office: Logistics Office
+  logistics route: Logistics Route
+  work order number: Work Order number
+  trade approved no: Trade Approved No
+  address code: Address Code
+  rfa reason: RFA Reason
+
+  # Statement / printing
+  statement format type: Statement Format Type
+  statement send method: Statement Send Method
+  web portal print category: Web Portal Print Category
+  printing layout: Printing Layout
+  contact department: Contact Department
+  cross territory companycode: Cross Territory CompanyCode
+  cross-territory: Cross-Territory
+  roundoff amount carry over: Roundoff Amount Carry Over
+  company code assignments: Company Code Assignments

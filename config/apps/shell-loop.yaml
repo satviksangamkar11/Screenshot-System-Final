@@ -1,0 +1,36 @@
+# Regression fixture: shell chrome plus an in-app link that leaves the
+# application. Reproduces a real capture run that followed the Fiori shell's
+# Home icon into the app launcher, opened an unrelated application from a
+# tile, and bounced Home-tile-Home-tile until the browser crashed.
+#
+# Expected: the shell header is never discovered at all; the in-content
+# breadcrumb "Home" IS captured as a point but never recursed into, because it
+# leaves the #MyApp semantic object.
+
+name: shell-loop
+title: Shell Loop Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/shell-loop.html#MyApp-start
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 10
+  maxDepth: 4
+  maxRunMs: 120000
+  stabilityTimeoutMs: 3000
+  appReadyTimeoutMs: 15000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

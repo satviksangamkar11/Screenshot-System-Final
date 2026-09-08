@@ -1,0 +1,34 @@
+# Regression fixture: an icon-only match-code/lookup Button placed beside a
+# labelled Input (a separate sap.m.Button, not the Input's own showValueHelp
+# affordance), discovered via a mocked UI5 registry. Reproduces the bug where
+# such a button carries no label of its own and was silently skipped by
+# shouldProcess() -- it should now be clicked, its dialog captured, and the
+# select's dropdown explored.
+
+name: ui5-lookup-button
+title: UI5 Lookup Button Test
+
+requiresAuth: false
+
+versions:
+  new:
+    url: file:///C:/screenshot%20system/fixtures/ui5-lookup-button.html
+
+safety:
+  denyLabels: [save, submit, delete, post, confirm, approve, send, create]
+  allowLabels: [search, execute, go]
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 20
+  maxPages: 5
+  maxDepth: 2
+  maxRunMs: 120000
+  stabilityTimeoutMs: 2000
+  appReadyTimeoutMs: 10000
+  editabilityCheckMs: 3000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

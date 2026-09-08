@@ -1,0 +1,66 @@
+# Example application configuration.
+#
+# Copy this file to config/apps/<your-app>.yaml and edit. The file name (without
+# .yaml) is the slug passed to the CLI as --app.
+#
+#   npm run login    -- --app example --version new
+#   npm run capture  -- --app example --version new
+#   npm run assemble -- --app example
+
+name: example
+title: DME Contract Register
+
+# Set false for applications reachable without signing in; capture then runs
+# without a saved session.
+requiresAuth: true
+
+versions:
+  old:
+    url: https://old.example.com/sap/bc/ui5_ui5/sap/zdme_contract/index.html
+  new:
+    url: https://new.example.com/sap/bc/ui5_ui5/sap/zdme_contract/index.html
+
+# Buttons the explorer must never click. These defaults prevent the automation
+# from creating real business documents in the target system. Anything listed in
+# allowLabels is treated as a safe read-only query.
+safety:
+  denyLabels:
+    - save
+    - submit
+    - delete
+    - post
+    - confirm
+    - approve
+    - send
+    - create
+  allowLabels:
+    - search
+    - execute
+    - go
+  strict: false
+
+# Limits that keep a recursive crawl bounded.
+budgets:
+  controlTimeoutMs: 20000
+  maxControlsPerPage: 120
+  maxPages: 50
+  maxDepth: 6
+  maxRunMs: 5400000
+  stabilityTimeoutMs: 15000
+  # Enterprise Fiori applications often need 20-100s before their content
+  # exists; capturing earlier photographs an empty shell.
+  appReadyTimeoutMs: 180000
+  # How long to wait for a control to actually be interactable (visible,
+  # enabled, not covered by a leftover overlay) before attempting to click or
+  # fill it. Kept short deliberately: this replaces waiting out the full
+  # controlTimeoutMs for a control that was never going to become fillable.
+  editabilityCheckMs: 5000
+
+# Structurally-interactive controls that should not become documentation points.
+excludeLabels: []
+
+# Label overrides layered on top of config/lexicon.yaml.
+lexicon: {}
+
+# Dummy values by canonical label, overriding config/testdata.yaml.
+testData: {}

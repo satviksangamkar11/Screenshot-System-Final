@@ -1,0 +1,40 @@
+# Dummy data strategy.
+#
+# Values are resolved in this order:
+#   1. app config `testData` (per application, by canonical label)
+#   2. `byLabel` below (global, by canonical label)
+#   3. `byKind` below (global fallback, by control kind)
+#
+# Value-help and lookup fields deliberately have no value here: the engine opens
+# the lookup and selects a real row instead of typing arbitrary text, so that the
+# value is always valid in the target system.
+
+byKind:
+  input: TEST01
+  textarea: Automated documentation capture
+  date: today
+  dateRange: today..+30d
+
+byLabel:
+  # Free-text identifiers
+  Invoice No: INV0001
+  DME Contract No: '2520'
+  Trade Approved No: '63737'
+  Work Order number: '354636472'
+  Equipment Description: TEST EQUIPMENT
+  Reported by: AUTOTEST
+
+  # Dates. `today` and relative offsets are resolved at run time.
+  Due Date: +14d
+  Start Date: today
+  End Date: +90d
+  Payment Date: +30d
+  Contract Start Date: today
+  Contract End Date: +90d
+  Work Order Period: today..+1d
+  Repair reception date(From): today
+  Repair reception date(To): +1d
+
+  # Numeric
+  Fixed Rebate Amount: '1000'
+  Payment Count: '1'

@@ -1,0 +1,43 @@
+# Exercises the WebGUI/ITS technology adapter against a local fixture
+# containing genuine `ur*`-classed ITS markup for every control kind the
+# adapter classifies, plus an icon-only toolbar Save button that only names
+# itself through its `title` attribute.
+
+name: webgui
+title: SAP GUI for HTML
+
+requiresAuth: false
+
+versions:
+  old:
+    url: file:///C:/screenshot%20system/fixtures/webgui-screen.html
+  new:
+    url: file:///C:/screenshot%20system/fixtures/webgui-screen.html
+
+safety:
+  denyLabels:
+    - save
+    - submit
+    - delete
+    - post
+    - confirm
+    - approve
+    - send
+    - create
+  allowLabels:
+    - search
+    - execute
+    - go
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 60
+  maxPages: 10
+  maxDepth: 3
+  maxRunMs: 300000
+  stabilityTimeoutMs: 4000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

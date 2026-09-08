@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DME Contract Master Search</title>
+<!--
+  Regression fixture for the "engine collapses an already-open panel" failure
+  found on the real ZDME_DISP application.
+
+  The panel header is a real accessible disclosure toggle
+  (role="button" aria-expanded="true") that STARTS OPEN, exactly like SAP
+  UI5's own Panel header. The generic button prober used to click every
+  actionButton-classified control it discovered with no regard for whether it
+  was already expanded: clicking this header closed the panel, its four
+  fields went invisible for the remainder of the run (each then skipped as
+  "not interactable (not visible)"), and the collapse itself was wrongly
+  recorded as a documentation point because the DOM did change -- just by
+  destroying content rather than revealing it.
+
+  Correct behaviour: the header must never be clicked (it has nothing to
+  reveal), so the fields stay visible and get filled and documented as
+  ordinary page content.
+-->
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  header { background: #354a5f; color: #fff; padding: 10px 16px; font-size: 15px; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .panel-head { font-size: 15px; color: #354a5f; background: none; border: none;
+                padding: 0 0 14px; cursor: pointer; font-weight: bold; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 12px 10px; align-items: center; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px;
+                  font-size: 13px; width: 100%; box-sizing: border-box; }
+  .collapsed { visibility: hidden; }
+  .actions { padding: 12px 16px; text-align: right; }
+  button.primary { background: #0a6ed1; color: #fff; border: none; padding: 8px 20px;
+                   border-radius: 3px; cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>CokeOne DME Tool</header>
+
+<div class="panel">
+  <button id="panelHead" class="panel-head" role="button" aria-expanded="true">DME Contract Master Search</button>
+
+  <div id="criteria" class="grid">
+    <label for="companyCode">Company Code:</label>
+    <input id="companyCode" type="text">
+
+    <label for="dmeContractNo">DME Contract No.:</label>
+    <input id="dmeContractNo" type="text">
+
+    <label for="paymentType">Payment Type:</label>
+    <select id="paymentType">
+      <option value="">Select</option>
+      <option>Pre Pay</option>
+      <option>Post Pay</option>
+    </select>
+
+    <label for="salesOfficeCode">Sales Office Code:</label>
+    <input id="salesOfficeCode" type="text">
+  </div>
+</div>
+
+<div class="actions">
+  <button id="searchBtn" class="primary">Search</button>
+</div>
+
+<script>
+  document.getElementById('panelHead').addEventListener('click', function () {
+    var criteria = document.getElementById('criteria');
+    var collapsing = !criteria.classList.contains('collapsed');
+    criteria.classList.toggle('collapsed');
+    this.setAttribute('aria-expanded', collapsing ? 'false' : 'true');
+  });
+</script>
+</body>
+</html>

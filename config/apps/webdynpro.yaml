@@ -1,0 +1,42 @@
+# Exercises the Web Dynpro ABAP (Lightspeed) technology adapter against a
+# local fixture containing genuine `lsdata`-bearing markup for every control
+# kind the adapter classifies.
+
+name: webdynpro
+title: Web Dynpro ABAP Form
+
+requiresAuth: false
+
+versions:
+  old:
+    url: file:///C:/screenshot%20system/fixtures/webdynpro-form.html
+  new:
+    url: file:///C:/screenshot%20system/fixtures/webdynpro-form.html
+
+safety:
+  denyLabels:
+    - save
+    - submit
+    - delete
+    - post
+    - confirm
+    - approve
+    - send
+    - create
+  allowLabels:
+    - search
+    - execute
+    - go
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 60
+  maxPages: 10
+  maxDepth: 3
+  maxRunMs: 300000
+  stabilityTimeoutMs: 4000
+
+excludeLabels: []
+lexicon: {}
+testData: {}

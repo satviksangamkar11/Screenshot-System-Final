@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DME Contract Master Search</title>
+<!--
+  Regression fixture for the "everything skipped as not interactable" failure.
+
+  Reproduces two conditions seen together on the real ZDME_DISP application:
+
+  1. The UI5 control registry is reachable ONLY through the legacy
+     sap.ui.getCore().mElements traversal -- sap.ui.core.Element.registry is
+     absent, as it is on releases where it was never exposed as a global.
+     Readiness used to consult only the modern registry, so it reported
+     interactive=0 for a fully rendered page and waited out its entire budget.
+
+  2. The search fields start hidden with `visibility: hidden`, which is how a
+     collapsed filter panel renders them. Such an element keeps a non-null
+     offsetParent and a non-zero bounding box, so the old discovery test
+     ("offsetParent !== null") called them visible, queued all of them, and the
+     editability gate then rejected every one as "not visible".
+
+  Clicking the panel header reveals them, which a later sweep must pick up.
+-->
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f7f7f7; color: #32363a; }
+  header { background: #354a5f; color: #fff; padding: 10px 16px; font-size: 15px; }
+  .panel { background: #fff; margin: 12px; padding: 16px; border: 1px solid #e5e5e5; }
+  .panel-head { font-size: 15px; color: #354a5f; background: none; border: none;
+                padding: 0 0 14px; cursor: pointer; font-weight: bold; }
+  .grid { display: grid; grid-template-columns: 200px 1fr; gap: 12px 10px; align-items: center; }
+  label { font-size: 13px; text-align: right; }
+  input, select { padding: 6px 8px; border: 1px solid #89919a; border-radius: 3px;
+                  font-size: 13px; width: 100%; box-sizing: border-box; }
+  /* A collapsed UI5 panel: laid out, but not shown. */
+  .collapsed { visibility: hidden; }
+  .actions { padding: 12px 16px; text-align: right; }
+  button.primary { background: #0a6ed1; color: #fff; border: none; padding: 8px 20px;
+                   border-radius: 3px; cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>CokeOne DME Tool</header>
+
+<div class="panel">
+  <button id="panelHead" class="panel-head">Searching Criteria</button>
+
+  <div id="criteria" class="grid collapsed">
+    <label for="__xmlview1--CompanyCodeID">Company Code:</label>
+    <input id="__xmlview1--CompanyCodeID" type="text">
+
+    <label for="__xmlview1--DmeNumHighID">DME Contract No.:</label>
+    <input id="__xmlview1--DmeNumHighID" type="text">
+
+    <label for="__xmlview1--PaymentTypeID">Payment Type:</label>
+    <select id="__xmlview1--PaymentTypeID">
+      <option value="">Select</option>
+      <option>Pre Pay</option>
+      <option>Post Pay</option>
+    </select>
+
+    <label for="__xmlview1--SalesOfficeID">Sales Office Code:</label>
+    <input id="__xmlview1--SalesOfficeID" type="text">
+  </div>
+</div>
+
+<div class="actions">
+  <button id="__xmlview1--SearchBtn" class="primary">Search</button>
+</div>
+
+<script>
+/*
+ * A deliberately minimal stand-in for the UI5 runtime: just enough of the
+ * control API for the discovery probe, and reachable only via the legacy
+ * getCore().mElements path.
+ */
+(function () {
+  function control(id, type, labelText) {
+    return {
+      getId: function () { return id; },
+      getMetadata: function () { return { getName: function () { return type; } }; },
+      getDomRef: function () { return document.getElementById(id); },
+      getVisible: function () { return true; },
+      getEnabled: function () { return true; },
+      getEditable: function () { return true; },
+      getRequired: function () { return false; },
+      getShowValueHelp: function () { return false; },
+      getText: function () { return labelText || ''; },
+      getLabels: function () {
+        var el = document.querySelector('label[for="' + id.replace(/"/g, '') + '"]');
+        if (!el) return [];
+        return [{ getText: function () { return el.textContent.replace(/:$/, ''); } }];
+      },
+      getParent: function () { return null; }
+    };
+  }
+
+  var mElements = {};
+  [
+    ['__xmlview1--CompanyCodeID', 'sap.m.Input', ''],
+    ['__xmlview1--DmeNumHighID', 'sap.m.Input', ''],
+    ['__xmlview1--PaymentTypeID', 'sap.m.Select', ''],
+    ['__xmlview1--SalesOfficeID', 'sap.m.Input', ''],
+    ['__xmlview1--SearchBtn', 'sap.m.Button', 'Search'],
+    ['panelHead', 'sap.m.Button', 'Searching Criteria']
+  ].forEach(function (spec) {
+    mElements[spec[0]] = control(spec[0], spec[1], spec[2]);
+  });
+
+  // Note: no sap.ui.core.Element.registry -- the legacy path is the only one.
+  window.sap = {
+    ui: {
+      getCore: function () {
+        return {
+          mElements: mElements,
+          byId: function (id) { return mElements[id]; }
+        };
+      }
+    }
+  };
+
+  document.getElementById('panelHead').addEventListener('click', function () {
+    document.getElementById('criteria').classList.toggle('collapsed');
+  });
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Local verification fixture.
+#
+# Exercises the full pipeline without needing the real environments: it contains
+# every control kind the engine classifies, plus a read-only field and a Save
+# button that must never be clicked.
+
+name: fixture
+title: DME Contract Master Search
+
+# The fixture is a local file, so no sign-in step is involved.
+requiresAuth: false
+
+versions:
+  old:
+    url: file:///C:/screenshot%20system/fixtures/contract-search.html
+  new:
+    url: file:///C:/screenshot%20system/fixtures/contract-search.html
+
+safety:
+  denyLabels:
+    - save
+    - submit
+    - delete
+    - post
+    - confirm
+    - approve
+    - send
+    - create
+  allowLabels:
+    - search
+    - execute
+    - go
+  strict: false
+
+budgets:
+  controlTimeoutMs: 8000
+  maxControlsPerPage: 60
+  maxPages: 10
+  maxDepth: 3
+  maxRunMs: 300000
+  stabilityTimeoutMs: 4000
+
+excludeLabels: []
+lexicon: {}
+testData: {}
