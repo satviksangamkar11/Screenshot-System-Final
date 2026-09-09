@@ -440,7 +440,12 @@ export function diffModels(oldModel: UiDocumentationModel, newModel: UiDocumenta
     rawPoints.push(...diffPatterns(oldPatterns, newPatterns));
   }
 
-  // Deduplicate and cap — HIGH first, then MEDIUM, cap at 8.
+  // Deduplicate, HIGH first then MEDIUM. Deliberately uncapped: this is the
+  // complete set of detected differences, and it is what the AI context is
+  // built from. Truncating here would discard evidence before the summary
+  // layer ever sees it, making a "complete" comparison impossible to produce
+  // no matter what the summary layer is asked for. Presentation limits, if
+  // any are ever wanted, belong in the renderer — not in the detector.
   const seen = new Set<string>();
   const deduped: DiffPoint[] = [];
   for (const p of rawPoints) {
@@ -453,7 +458,7 @@ export function diffModels(oldModel: UiDocumentationModel, newModel: UiDocumenta
 
   const high = deduped.filter((p) => p.importance === 'high');
   const medium = deduped.filter((p) => p.importance === 'medium');
-  const selected = [...high, ...medium].slice(0, 8);
+  const selected = [...high, ...medium];
 
   let overallChange: ModelDiff['overallChange'] = 'no_change';
   let overallText = 'No meaningful UI change detected.';

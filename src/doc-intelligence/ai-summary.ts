@@ -46,7 +46,16 @@ function systemPrompt(context: AiContext): string {
     context.type === 'single'
       ? '{"points":[{"text":string,"importance":"high"|"medium"|"low","evidenceRefs":[number,...]}]}'
       : '{"points":[{"text":string,"importance":"high"|"medium"|"low","category":"added"|"removed"|"changed"|"state"|"structure"|"behavior","evidenceRefs":[string,...]}],"overallChange":{"level":"no_change"|"minor"|"moderate"|"major","text":string}}',
-    'Write 3 to 8 points. Prefer clear, complete sentences a non-technical reader can act on: what exists, what changed, what it does, in plain language.',
+    // Coverage, not a point count. The deterministic pipeline's job is to find
+    // everything; this layer's job is to organise all of it into something
+    // readable — so asking for "N points" would silently discard findings the
+    // pipeline worked to detect.
+    'Cover ALL material supported findings in the data you were given. Do not omit material evidence, and do not stop early — completeness matters more than brevity.',
+    'Group related findings into a single point rather than repeating near-identical statements: if several controls in one section share a behaviour, describe the section once and name the controls. Deduplicate aggressively; the goal is complete coverage without redundancy.',
+    context.type === 'single'
+      ? 'Work through the application in a natural reading order: pages, then sections and tabs, then the controls they contain — covering requiredness, the interactions available, observed states, workflow, dialogs and value helps, validations, and anything that failed or was skipped.'
+      : 'Work through the change story in this order: what was added, what was removed, what changed, then behaviour, state, structural and workflow differences.',
+    'Prefer clear, complete sentences a non-technical reader can act on: what exists, what changed, what it does, in plain language.',
   ].join('\n');
 }
 
@@ -100,7 +109,11 @@ export async function generateAiSummary(context: AiContext): Promise<AiSummaryRe
       { role: 'system', content: systemPrompt(context) },
       { role: 'user', content: userPrompt(context) },
     ],
-    { temperature: 0.2, maxTokens: 2500, jsonMode: true },
+    // Generous, because the point count is no longer capped: a truncated
+    // response is invalid JSON, which would fail parsing and silently drop the
+    // whole summary to the deterministic fallback. Reasoning tokens are drawn
+    // from this same budget on Groq's gpt-oss models (see llm/client.ts).
+    { temperature: 0.2, maxTokens: 8000, jsonMode: true },
   );
 
   const parsed = parseJsonResponse(raw);
