@@ -61,14 +61,20 @@ export async function runManualStep(
    * unknown, which manual mode leaves entirely to the operator's own
    * judgement rather than clicking on their behalf.
    */
-  if (
+  const isOverlayKind =
     control.kind === 'select' ||
     control.kind === 'multiSelect' ||
     control.kind === 'valueHelp' ||
     control.kind === 'date' ||
-    control.kind === 'dateRange'
-  ) {
+    control.kind === 'dateRange';
+
+  if (isOverlayKind) {
     await openControlOverlay(control, ctx, loc, selector).catch(() => undefined);
+    // The open overlay (dropdown/calendar/value-help list) IS the evidence,
+    // same as Automatic mode's handleSelect/handleDate — captured here,
+    // before the operator acts, rather than after the control has already
+    // closed and that state is gone.
+    await ctx.capture();
   } else if (control.kind === 'input' || control.kind === 'textarea') {
     /*
      * The text box in the web UI sends typed characters via
@@ -124,13 +130,7 @@ export async function runManualStep(
   const verification = async (): Promise<{ valid: boolean; reason: string }> => {
     if (control.kind === 'input' || control.kind === 'textarea') {
       return await verifyFieldSubmission(ctx.page, control, selector);
-    } else if (
-      control.kind === 'select' ||
-      control.kind === 'multiSelect' ||
-      control.kind === 'valueHelp' ||
-      control.kind === 'date' ||
-      control.kind === 'dateRange'
-    ) {
+    } else if (isOverlayKind) {
       return await verifySelectionSubmission(ctx.page, control, selector);
     }
     return { valid: true, reason: 'not-applicable' }; // no verification needed for other control kinds
@@ -143,6 +143,13 @@ export async function runManualStep(
       `  [manual] ${control.kind} "${label}" verification failed (${reason}); offering one retry`,
     );
     gate.setItemStatus(control.dedupeKey, 'waiting');
+
+    if (isOverlayKind) {
+      // The first attempt's overlay is long closed by now — reopen it so the
+      // retry gets its own opened-state evidence, same as the first pass.
+      await openControlOverlay(control, ctx, loc, selector).catch(() => undefined);
+      await ctx.capture();
+    }
 
     // Restart the live view for the retry
     await remote?.start();
@@ -177,7 +184,15 @@ export async function runManualStep(
     }
   }
 
-  await ctx.capture();
+  // For overlay kinds, the opened-state capture above already is the
+  // evidence — same as Automatic mode, which never captures again after
+  // closing the dropdown/calendar/value-help. The resulting value shows up
+  // in the section's Full Page capture instead. Text/textarea have no
+  // intermediate state, so they still need this final capture of the filled
+  // field.
+  if (!isOverlayKind) {
+    await ctx.capture();
+  }
   gate.setItemStatus(control.dedupeKey, 'completed');
   return { documented: true };
 }
