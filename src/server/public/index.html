@@ -578,11 +578,19 @@
     }
   });
 
+  function escapeHtml(value) {
+    return String(value).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+  }
+
+  /** HH:MM:SS.mmm, matching the server's own `ts()` formatting in util/logger.ts. */
+  function formatTs(epochMs) {
+    return new Date(epochMs).toISOString().slice(11, 23);
+  }
+
   function renderLog(lines) {
     els.log.innerHTML = lines.map((l) => {
       const cls = l.level === 'ok' ? 'ok' : l.level === 'warn' ? 'warn' : l.level === 'error' ? 'error' : '';
-      let text = String(l.message).replace(/[<>&]/g, (c) =>
-        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+      let text = escapeHtml(l.message);
       /*
        * The server logs the live view as a path rather than a full URL,
        * because it cannot know which host/port the operator reached it on.
@@ -590,8 +598,29 @@
        */
       text = text.replace(/\/live\/(?:jobs|logins)\/[a-z0-9-]+/gi, (p) =>
         '<a href="' + p + '" target="_blank" rel="noopener">' + p + '</a>');
-      return cls ? '<span class="' + cls + '">' + text + '</span>' : text;
+      const stamped = (typeof l.at === 'number' ? '[' + formatTs(l.at) + '] ' : '') + text;
+      return cls ? '<span class="' + cls + '">' + stamped + '</span>' : stamped;
     }).join('\n');
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  /**
+   * Appends one line to the Progress log immediately, client-side, with its
+   * own timestamp — for events the operator's browser learns about directly
+   * (a failed /input dispatch) rather than by waiting for the next `poll()`
+   * tick to pick it up from the job's server-side log. The next poll's
+   * `renderLog` call still fully replaces this content with the durable
+   * server-side log (which records the same failure independently, since
+   * RemoteControl logs before rethrowing) — this is only about not leaving
+   * the operator staring at a live view that silently ate their input for
+   * up to a second before any explanation shows up.
+   */
+  function appendLog(level, message) {
+    if (els.logPanel.classList.contains('hidden')) return;
+    const cls = level === 'ok' ? 'ok' : level === 'warn' ? 'warn' : level === 'error' ? 'error' : '';
+    const stamped = '[' + formatTs(Date.now()) + '] ' + escapeHtml(message);
+    const line = cls ? '<span class="' + cls + '">' + stamped + '</span>' : stamped;
+    els.log.innerHTML += (els.log.innerHTML ? '\n' : '') + line;
     els.log.scrollTop = els.log.scrollHeight;
   }
 
@@ -697,11 +726,15 @@
   async function sendInput(event) {
     if (!liveBaseUrl) return;
     try {
-      await fetch(liveBaseUrl + '/input', {
+      const r = await fetch(liveBaseUrl + '/input', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event),
       });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        appendLog('error', '[input] ' + event.type + ' dispatch failed: ' + (d.error || r.status));
+      }
     } catch { /* a dropped input event is not worth surfacing as an error */ }
   }
 
