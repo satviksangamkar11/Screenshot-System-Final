@@ -399,11 +399,13 @@ The single place in the codebase that talks to an LLM API. Any future feature ne
 | `GROQ_API_KEY` | Primary |
 | `GROQ_API_KEY_2` | Rotated to on auth / rate-limit / server errors |
 | `GROQ_API_KEY_3` | Rotated to next |
-| `GEMINI_API_KEY` | Fallback once every Groq key is exhausted |
-| `GROQ_MODEL` | Optional model override (default `openai/gpt-oss-120b`) |
+| `GEMINI_API_KEY` | Fallback once every Groq model has exhausted every key |
+| `GROQ_MODELS` | Comma-separated model priority list (default `openai/gpt-oss-120b, qwen/qwen3.8-27b, qwen/qwen3.6-27b, openai/gpt-oss-20b`) |
+| `GROQ_MODEL` | Single-model override, kept for existing `.env` files; ignored if `GROQ_MODELS` is set |
 | `GEMINI_MODEL` | Optional model override (default `gemini-3.6-flash`) |
 
-- **Rotation is selective.** `401` / `403` / `429` / `5xx` rotate to the next key. A `404` (retired model id) does **not** — another key cannot fix a bad model name, so it fails fast instead of burning all three keys.
+- **Two independent fallback axes.** Each Groq model in the priority list is tried against every configured key before the next model is ever attempted — a model is not retried just because some other model failed, and a request never starts anywhere but the top of the list.
+- **Rotation within a model is selective.** `401` / `403` / `429` / `5xx` rotate to the next key for that same model. A `404` (retired model id) does **not** — another key cannot fix a bad model name, so that model is abandoned for the next one in the list rather than burning the remaining keys on it.
 - **Model ids are env-overridable** because providers retire them regularly; that should be a config edit, not a code change.
 - **Reasoning-model aware.** Groq's `gpt-oss` models spend reasoning tokens from the same `max_tokens` budget before emitting any content, so a tight cap silently returns empty output. The client uses a generous budget with `reasoning_effort: 'low'`.
 - `.env` is loaded by a small built-in parser in `config/load.ts` — no `dotenv` dependency. Real environment variables always win over `.env` values.
@@ -708,7 +710,7 @@ GEMINI_API_KEY=
 | **General Summary tab empty / says no summary was returned** | The server is running code older than the page. `index.html` is read from disk per request, but `jobs.ts`/`app.ts` live in the running process — **restart the server** |
 | **AI Summary reads identically to General Summary** | The LLM path fell back to deterministic. Check the server log for the reason — usually no key set, or every provider failing |
 | **AI Summary tab shows an error** | Read the message: `No LLM API keys configured` (set `.env`), or `All LLM providers failed:` followed by each provider's own error |
-| `Groq 404: model ... does not exist` | The default model id was retired. Set `GROQ_MODEL` in `.env` to a currently-served model |
+| `Groq 404: model ... does not exist` | That model id was retired; the client already moves on to the next one in `GROQ_MODELS`. If every model in the list is now retired, update `GROQ_MODELS` in `.env` |
 | `Gemini 429: prepayment credits are depleted` | The Gemini fallback key has no billing credit — either top it up or rely on Groq |
 | AI Summary returns fewer points than expected | Points whose evidence citations failed validation were dropped on purpose (§6.2) — the capture may simply hold little documentable evidence |
 
