@@ -116,10 +116,15 @@ export class RemoteControl {
     }
   }
 
-  /** Forwards a single named key (Enter, Tab, Escape, Backspace, arrows, ...). */
-  async key(key: string): Promise<void> {
+  /**
+   * Forwards a single key press, with an optional CDP modifiers bitmask
+   * (Alt=1, Ctrl=2, Meta/Cmd=4, Shift=8 — combine with bitwise OR) so
+   * shortcuts and shifted characters typed into the Live View behave the
+   * same as they would on the real SAP page.
+   */
+  async key(key: string, modifiers = 0): Promise<void> {
     try {
-      await this.page.keyboard.press(key);
+      await this.page.keyboard.press(key, modifiers);
     } catch (err) {
       log.warn(`  [remote] key(${key}) failed: ${errMsg(err)}`);
       throw err;

@@ -318,7 +318,7 @@
     <h2 id="liveViewHeading">Live View</h2>
     <p class="hint" id="liveViewHint">Click and type directly below.</p>
     <div class="liveViewWrap">
-      <img id="liveView" alt="Live view">
+      <img id="liveView" alt="Live view" tabindex="0">
       <div class="liveStatus" id="liveStatus">Connecting to live view…</div>
       <span class="liveHint hidden" id="liveHint">Click to interact</span>
     </div>
@@ -754,7 +754,32 @@
     const x = Math.round((e.clientX - rect.left) * scaleX);
     const y = Math.round((e.clientY - rect.top) * scaleY);
     sendInput({ type: 'click', x, y });
-    els.manualTextInput.focus();
+    // Keep focus on the image itself so the universal keydown forwarder
+    // above receives the operator's next keystrokes.
+    els.liveView.focus();
+  });
+
+  // CDP `Input.dispatchKeyEvent` modifiers bitmask: Alt=1, Ctrl=2, Meta=4, Shift=8.
+  function cdpModifiers(e) {
+    return (e.altKey ? 1 : 0) | (e.ctrlKey ? 2 : 0) | (e.metaKey ? 4 : 0) | (e.shiftKey ? 8 : 0);
+  }
+  const STANDALONE_MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta']);
+
+  /*
+   * Universal keyboard forwarding: the Live View <img> previously had mouse
+   * interaction only, so any field reached purely by clicking into it (as
+   * opposed to typing through #manualTextInput below) never received
+   * keystrokes at all. Clicking the image focuses it (tabindex="0" above)
+   * and this listener forwards every key straight into the same remote
+   * page via sendInput — the same path #manualTextInput already uses —
+   * carrying modifier state so shortcuts and shifted characters behave.
+   * This is deliberately field-agnostic: it doesn't know or care which SAP
+   * field is focused, so it works for any of them without per-field logic.
+   */
+  els.liveView.addEventListener('keydown', (e) => {
+    if (STANDALONE_MODIFIER_KEYS.has(e.key)) return;
+    e.preventDefault();
+    sendInput({ type: 'key', key: e.key, modifiers: cdpModifiers(e) });
   });
 
   // A small fixed set of forwarded keys for keyboard-driven UI (closing

@@ -186,12 +186,13 @@ async function handle(
       y?: number;
       key?: string;
       value?: string;
+      modifiers?: number;
     };
 
     if (body.type === 'click' && typeof body.x === 'number' && typeof body.y === 'number') {
       await remote.click(body.x, body.y);
     } else if (body.type === 'key' && typeof body.key === 'string') {
-      await remote.key(body.key);
+      await remote.key(body.key, typeof body.modifiers === 'number' ? body.modifiers : 0);
     } else if (body.type === 'text' && typeof body.value === 'string') {
       await remote.insertText(body.value);
     } else {
@@ -375,6 +376,7 @@ async function handle(
       y?: number;
       key?: string;
       value?: string;
+      modifiers?: number;
     };
 
     if (
@@ -393,7 +395,7 @@ async function handle(
       if (body.type === 'click') {
         await remote.click(body.x as number, body.y as number);
       } else if (body.type === 'key') {
-        await remote.key(body.key as string);
+        await remote.key(body.key as string, typeof body.modifiers === 'number' ? body.modifiers : 0);
       } else {
         await remote.insertText(body.value as string);
       }

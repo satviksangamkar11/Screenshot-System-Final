@@ -337,7 +337,7 @@ export class PageShim {
      * rawKeyDown + char + keyUp for printable keys and plain keyDown/keyUp
      * for named ones (Escape, Tab, Enter, arrows, F-keys, Backspace).
      */
-    press: async (key: string) => {
+    press: async (key: string, modifiers = 0) => {
       const keyCode = this.getWindowsVirtualKeyCode(key);
       const isPrintable = key.length === 1;
 
@@ -345,18 +345,21 @@ export class PageShim {
         type: isPrintable ? 'rawKeyDown' : 'keyDown',
         key,
         windowsVirtualKeyCode: keyCode,
+        modifiers,
       });
       if (isPrintable) {
         await this.cdpSession.send('Input.dispatchKeyEvent', {
           type: 'char',
           text: key,
           unmodifiedText: key,
+          modifiers,
         });
       }
       await this.cdpSession.send('Input.dispatchKeyEvent', {
         type: 'keyUp',
         key,
         windowsVirtualKeyCode: keyCode,
+        modifiers,
       });
     },
     insertText: async (text: string) => {
