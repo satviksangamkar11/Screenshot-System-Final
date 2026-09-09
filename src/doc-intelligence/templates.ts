@@ -7,9 +7,6 @@ export interface RenderedPoint {
   category?: string;
 }
 
-const MIN_POINTS = 3;
-const MAX_POINTS = 8;
-
 /** Case-insensitive exact/substring match — good enough to catch near-duplicate facts. */
 function isNearDuplicate(text: string, existing: string[]): boolean {
   const norm = text.trim().toLowerCase();
@@ -20,10 +17,16 @@ function isNearDuplicate(text: string, existing: string[]): boolean {
 }
 
 /**
- * Selects and caps DocFacts into TL;DR points: HIGH first, then MEDIUM to pad,
- * deduping near-identical text. Pure selection/formatting — no LLM call, no
- * fabricated padding. See "Facts and TL;DR selection" in
+ * Orders DocFacts into documentation points: HIGH first, then MEDIUM, deduping
+ * near-identical text. Pure selection/formatting — no LLM call, no fabricated
+ * padding. See "Facts and TL;DR selection" in
  * docs/ai-documentation-intelligence-plan.md.
+ *
+ * Every distinct verified fact is returned. There is deliberately no point
+ * cap: the deterministic pipeline's job is to report everything it established,
+ * and truncating at an arbitrary count silently hid facts it had already
+ * proven. Near-duplicate filtering is what keeps the list readable — a length
+ * limit only made it incomplete.
  */
 export function renderSinglePoints(facts: DocFact[]): RenderedPoint[] {
   if (facts.length === 0) {
@@ -37,13 +40,13 @@ export function renderSinglePoints(facts: DocFact[]): RenderedPoint[] {
   const selectedTexts: string[] = [];
 
   for (const fact of [...high, ...medium]) {
-    if (selected.length >= MAX_POINTS) break;
     if (isNearDuplicate(fact.text, selectedTexts)) continue;
     selected.push(fact);
     selectedTexts.push(fact.text);
   }
 
-  // Fewer than MIN_POINTS distinct facts total: return what's honestly there
-  // (0, 1, or 2 points) rather than padding with fabricated content.
+  // However few distinct facts there are, return exactly those — 0, 1 or 2 is
+  // an honest answer, and padding to reach some minimum would mean inventing
+  // content the capture never established.
   return selected.map((f) => ({ text: f.text, importance: f.importance, category: f.category }));
 }
