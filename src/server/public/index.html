@@ -723,8 +723,9 @@
     els.liveHint.classList.add('hidden');
   }
 
+  /** Returns whether the dispatch reached the remote page successfully — diagnostic only, does not change dispatch behavior. */
   async function sendInput(event) {
-    if (!liveBaseUrl) return;
+    if (!liveBaseUrl) return false;
     try {
       const r = await fetch(liveBaseUrl + '/input', {
         method: 'POST',
@@ -734,8 +735,10 @@
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
         appendLog('error', '[input] ' + event.type + ' dispatch failed: ' + (d.error || r.status));
+        return false;
       }
-    } catch { /* a dropped input event is not worth surfacing as an error */ }
+      return true;
+    } catch { /* a dropped input event is not worth surfacing as an error */ return false; }
   }
 
   els.liveView.addEventListener('click', (e) => {
@@ -764,8 +767,14 @@
         // the value sits in the field but dependent fields don't react and the
         // SAP validation doesn't run — the field looks filled but isn't treated
         // as confirmed by the framework.
-        sendInput({ type: 'text', value })
-          .then(() => sendInput({ type: 'key', key: 'Tab' }));
+        appendLog('', '[diag] TEXT START value="' + value + '"');
+        sendInput({ type: 'text', value }).then((textOk) => {
+          appendLog(textOk ? '' : 'error', '[diag] TEXT ' + (textOk ? 'SUCCESS' : 'FAIL'));
+          appendLog('', '[diag] TAB START');
+          return sendInput({ type: 'key', key: 'Tab' }).then((tabOk) => {
+            appendLog(tabOk ? '' : 'error', '[diag] TAB ' + (tabOk ? 'SUCCESS' : 'FAIL'));
+          });
+        });
         els.manualTextInput.value = '';
       } else {
         sendInput({ type: 'key', key: 'Enter' });
@@ -785,6 +794,7 @@
 
   async function confirmActive(action, btn) {
     if (!currentJob || !activeManualId) return;
+    if (action === 'submit') appendLog('', '[diag] SUBMIT CLICK controlId="' + activeManualId + '"');
     btn.disabled = true;
     try {
       const r = await fetch('/api/jobs/' + currentJob + '/manual', {

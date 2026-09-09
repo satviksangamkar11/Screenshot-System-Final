@@ -1,4 +1,4 @@
-import type { Page } from '../automation/types.js';
+import type { Page, Locator } from '../automation/types.js';
 import type { ControlDescriptor } from '../types.js';
 import type { ManualGate } from '../state/manualGate.js';
 import type { RemoteControl } from '../server/remoteControl.js';
@@ -267,6 +267,62 @@ async function verifySelectionSubmission(
 }
 
 /**
+ * Diagnostic-only dump of everything relevant to why a text/numeric field's
+ * verification might read empty: what the raw selector matched, what
+ * editableLocator resolved it to, and where the page's own DOM focus
+ * actually is at verification time. Pure logging — never affects control
+ * flow, timing, or the verification result itself.
+ */
+async function logVerificationDiagnostics(
+  page: Page,
+  control: ControlDescriptor,
+  selector: string,
+  target: Locator,
+): Promise<void> {
+  const label = control.canonicalLabel || control.label || control.id;
+  try {
+    const matchedCount = await page
+      .locator(selector)
+      .count()
+      .catch(() => -1);
+    const editableCount = await page
+      .locator(
+        `${selector} input:not([type="hidden"]), ${selector} textarea, ${selector} [contenteditable="true"]`,
+      )
+      .count()
+      .catch(() => -1);
+    const resolved = await target
+      .evaluate((el: Element) => {
+        const e = el as HTMLInputElement | HTMLTextAreaElement;
+        return {
+          tagName: el.tagName,
+          id: (el as HTMLElement).id || '',
+          type: 'type' in e ? ((e as HTMLInputElement).type ?? '') : '',
+          value: e.value ?? '',
+        };
+      })
+      .catch(() => ({ tagName: 'n/a', id: 'n/a', type: 'n/a', value: 'n/a' }));
+    const active = await page
+      .evaluate(() => {
+        const el = document.activeElement as (HTMLInputElement & HTMLTextAreaElement) | null;
+        return { id: el?.id ?? '', value: el && 'value' in el ? (el.value ?? '') : '' };
+      })
+      .catch(() => ({ id: 'n/a', value: 'n/a' }));
+
+    log.debug(
+      `  [manual-verify] label="${label}" selector="${selector}" matchedBySelector=${matchedCount} ` +
+        `editableDescendants=${editableCount} resolved.tagName=${resolved.tagName} resolved.id="${resolved.id}" ` +
+        `resolved.type="${resolved.type}" resolved.value="${resolved.value}" ` +
+        `activeElement.id="${active.id}" activeElement.value="${active.value}"`,
+    );
+  } catch (err) {
+    log.debug(
+      `  [manual-verify] diagnostics failed for "${label}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+/**
  * Verifies that a text/numeric field submission is valid.
  * Checks the actual `<input>` or `<textarea>` value via editableLocator,
  * so it works for both native elements and UI5 TextField wrappers.
@@ -279,6 +335,7 @@ async function verifyFieldSubmission(
   try {
     // Resolve through editableLocator to reach the actual <input> or <textarea>.
     const target = await editableLocator(page, selector);
+    await logVerificationDiagnostics(page, control, selector, target);
     const result = await target
       .evaluate((el: Element) => {
         const e = el as HTMLInputElement | HTMLTextAreaElement;
