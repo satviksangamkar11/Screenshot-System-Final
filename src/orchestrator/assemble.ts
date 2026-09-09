@@ -20,6 +20,8 @@ export async function assembleDocument(
   opts: {
     runIds?: Partial<Record<VersionId, string>>;
     outputPath?: string;
+    /** Included in the document only when the caller passes it — see the job's inclusion toggles. */
+    generalSummary?: AiSummaryResult;
     aiSummary?: AiSummaryResult;
   } = {},
 ): Promise<string> {
@@ -64,7 +66,13 @@ export async function assembleDocument(
   const outputPath =
     opts.outputPath ?? path.join(OUTPUT_DIR, `${safeName(app.title)}.docx`);
 
-  await buildDocument({ title: app.title, traces, outputPath, aiSummary: opts.aiSummary });
+  await buildDocument({
+    title: app.title,
+    traces,
+    outputPath,
+    generalSummary: opts.generalSummary,
+    aiSummary: opts.aiSummary,
+  });
   log.ok(`Document written: ${outputPath}`);
   return outputPath;
 }

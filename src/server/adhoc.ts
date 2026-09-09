@@ -74,6 +74,13 @@ export interface AdHocInput {
   newUrl?: string;
   title?: string;
   dataEntryMode?: 'automatic' | 'manual';
+  /**
+   * Document-inclusion toggles. They decide only whether an already-generated
+   * summary is written into the `.docx` — never whether one is generated, and
+   * never whether the LLM is called. Absent means on, which is the default.
+   */
+  includeGeneralInDoc?: boolean;
+  includeAiInDoc?: boolean;
   /** Identifies which browser this request came from; see `safeUserId`. */
   userId?: string;
 }

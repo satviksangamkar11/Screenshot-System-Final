@@ -324,6 +324,30 @@
     <span class="modeHint">Off by default — the General Summary is always produced, with no API call. Turn this on to also have an LLM write a complete, evidence-checked explanation into the AI Summary tab and the document.</span>
   </div>
 
+  <!--
+    Document inclusion only. These decide what is written into the .docx and
+    nothing else: both summaries are still produced exactly as before, both
+    tabs below still show them, and neither toggle can cause an LLM call —
+    that remains entirely the AI Summary toggle's job.
+  -->
+  <div class="toggleRow">
+    <label class="switch">
+      <input type="checkbox" id="includeGeneralInDoc" checked>
+      <span class="track"></span>
+    </label>
+    <label class="switchLabel" for="includeGeneralInDoc">Include General Summary in Document</label>
+    <span class="modeHint">On by default. Controls only whether the General Summary is written into the .docx — it is generated and shown below either way.</span>
+  </div>
+
+  <div class="toggleRow">
+    <label class="switch">
+      <input type="checkbox" id="includeAiInDoc" checked>
+      <span class="track"></span>
+    </label>
+    <label class="switchLabel" for="includeAiInDoc">Include AI Summary in Document</label>
+    <span class="modeHint">On by default. Controls only whether an already-generated AI Summary is written into the .docx. With AI Summary above off, nothing is generated, so there is nothing to include.</span>
+  </div>
+
   <div class="columns">
     <div class="col">
       <h2>Old Version</h2>
@@ -443,6 +467,8 @@
     resultPanel: $('resultPanel'), resultNotice: $('resultNotice'),
     summaryTable: $('summaryTable'), download: $('download'),
     aiSummaryToggle: $('aiSummaryToggle'),
+    includeGeneralInDoc: $('includeGeneralInDoc'),
+    includeAiInDoc: $('includeAiInDoc'),
     summaryPanel: $('summaryPanel'),
     tabGeneral: $('tabGeneral'), tabAi: $('tabAi'),
     generalDot: $('generalDot'), aiDot: $('aiDot'),
@@ -666,7 +692,13 @@
       const r = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldUrl, newUrl, dataEntryMode: currentMode() }),
+        body: JSON.stringify({
+          oldUrl,
+          newUrl,
+          dataEntryMode: currentMode(),
+          includeGeneralInDoc: els.includeGeneralInDoc.checked,
+          includeAiInDoc: els.includeAiInDoc.checked,
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Could not start');

@@ -79,6 +79,15 @@ export interface Job {
   title: string;
   versions: VersionId[];
   dataEntryMode: 'automatic' | 'manual';
+  /**
+   * Whether each summary is written into the `.docx`. Document-inclusion only:
+   * the General Summary is generated for every job either way, and the AI
+   * Summary is generated only when the operator's separate AI Summary toggle
+   * asked for it. Neither flag can cause a summary to be generated or an LLM
+   * call to be made.
+   */
+  includeGeneralInDoc: boolean;
+  includeAiInDoc: boolean;
   /** Original input retained so the document can be rebuilt (e.g. with AI Summary). */
   input?: AdHocInput;
   log: JobLogLine[];
@@ -183,6 +192,8 @@ export function startJob(input: AdHocInput): Job {
     title: app.title,
     versions,
     dataEntryMode: app.dataEntryMode,
+    includeGeneralInDoc: input.includeGeneralInDoc !== false,
+    includeAiInDoc: input.includeAiInDoc !== false,
     input,
     manualQueue: [],
     captures: [],
@@ -498,6 +509,70 @@ export function startStandaloneLogin(url: string, userId?: string): string {
 }
 
 /**
+ * Serialises document rewrites per job. Both summary tracks settle
+ * independently and either can finish last, so without this two of them
+ * landing together would write the same `.docx` at the same time.
+ */
+const documentWrites = new Map<string, Promise<void>>();
+
+/**
+ * Rewrites the job's document so it carries exactly the summaries the operator
+ * asked to include.
+ *
+ * A summary is written only when it both exists and its inclusion toggle is
+ * on, which is the whole of the inclusion rule. This never generates
+ * anything: it renders what the two tracks have already produced, so turning
+ * an inclusion toggle off cannot suppress generation and turning one on
+ * cannot cause an LLM call.
+ *
+ * Both tracks call this rather than each writing its own idea of the
+ * document, so whichever finishes second still produces a file containing
+ * both sections instead of overwriting the other's work.
+ */
+function rebuildDocumentWithSummaries(job: Job): Promise<void> {
+  const general = job.includeGeneralInDoc ? job.generalSummary : undefined;
+  const ai = job.includeAiInDoc ? job.aiSummary : undefined;
+
+  /*
+   * Nothing to add — the document as first written already contains neither
+   * section, so rewriting it would be pure risk (a download taken mid-write)
+   * for an identical result. This is what keeps an all-off run writing its
+   * document exactly once, as it does today.
+   */
+  if (!general && !ai) return Promise.resolve();
+  if (!job.documentPath || !job.input || !job.runIds) return Promise.resolve();
+
+  const { documentPath, input, runIds } = job as Job & {
+    documentPath: string;
+    input: AdHocInput;
+    runIds: Partial<Record<VersionId, string>>;
+  };
+
+  const write = (documentWrites.get(job.id) ?? Promise.resolve()).then(async () => {
+    try {
+      const app = buildAdHocConfig(input, job.id);
+      await assembleDocument(app, {
+        runIds,
+        outputPath: documentPath,
+        ...(general ? { generalSummary: general } : {}),
+        ...(ai ? { aiSummary: ai } : {}),
+      });
+      const included = [general ? 'General Summary' : null, ai ? 'AI Summary' : null]
+        .filter(Boolean)
+        .join(' + ');
+      log.ok(`Document updated with ${included}: ${documentPath}`);
+    } catch (err) {
+      log.warn(
+        `Could not update the document with summaries: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  });
+
+  documentWrites.set(job.id, write);
+  return write;
+}
+
+/**
  * Builds the deterministic "General Summary" for a finished job.
  *
  * Deliberately independent of `requestAiSummary()`: this track involves no
@@ -518,6 +593,12 @@ function startGeneralSummary(job: Job): void {
     .then((general) => {
       job.generalSummary = general;
       job.generalSummaryStatus = 'done';
+      /*
+       * Deliberately not awaited: the General tab has always appeared the
+       * moment this status flips, and making it wait on a document rewrite
+       * would change that. The rewrite is independent of what the tab shows.
+       */
+      void rebuildDocumentWithSummaries(job);
     })
     .catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
@@ -552,20 +633,9 @@ export function requestAiSummary(jobId: string): { ok: true } | { ok: false; err
   generateAiDocumentationPoints(job.runIds)
     .then(async (result) => {
       job.aiSummary = result;
-      // Rebuild the document with the AI summary appended at the end.
-      if (job.documentPath && job.input) {
-        try {
-          const app = buildAdHocConfig(job.input, job.id);
-          await assembleDocument(app, {
-            runIds: job.runIds,
-            outputPath: job.documentPath,
-            aiSummary: result,
-          });
-          log.ok(`Document updated with AI Summary: ${job.documentPath}`);
-        } catch (err) {
-          log.warn(`Could not update document with AI summary: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
+      // Unchanged ordering: the document is brought up to date before this
+      // track reports done, so a download taken at that point already has it.
+      await rebuildDocumentWithSummaries(job);
       job.aiSummaryStatus = 'done';
     })
     .catch((err) => {

@@ -53,6 +53,8 @@ export interface BuildOptions {
   /** Traces keyed by version. Either may be absent. */
   traces: Partial<Record<VersionId, { trace: RunTrace; runDir: string }>>;
   outputPath: string;
+  /** When provided, a "UI Documentation" section is appended ahead of the AI one. */
+  generalSummary?: AiSummaryResult;
   /** When provided, an "AI Summary" section is appended as the last page of the document. */
   aiSummary?: AiSummaryResult;
 }
@@ -108,9 +110,24 @@ export async function buildDocument(opts: BuildOptions): Promise<string> {
     await renderNode(children, root, entry.runDir);
   }
 
-  // AI Summary — appended as the last section when the caller supplies it.
+  /*
+   * Summary sections, in deterministic-then-AI order, each appended only when
+   * the caller supplies it. Whether a summary is supplied at all is decided
+   * upstream (the operator's document-inclusion toggles); this file just
+   * renders what it is handed.
+   */
+  if (opts.generalSummary) {
+    renderSummarySection(children, opts.generalSummary, {
+      single: 'UI DOCUMENTATION',
+      comparison: 'UI COMPARISON',
+    });
+  }
+
   if (opts.aiSummary) {
-    renderAiSummary(children, opts.aiSummary);
+    renderSummarySection(children, opts.aiSummary, {
+      single: 'AI UI DOCUMENTATION',
+      comparison: 'AI UI COMPARISON',
+    });
   }
 
   const doc = new Document({
@@ -284,16 +301,26 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 /**
- * Appends the AI UI Documentation section as the final page of the document.
+ * Appends one summary section as a page of its own.
  *
- * Single version: "AI UI DOCUMENTATION" heading + bullet points.
- * Comparison:     "AI UI COMPARISON" heading + categorised bullet points
+ * Single version: the `single` heading + bullet points.
+ * Comparison:     the `comparison` heading + categorised bullet points
  *                 + optional "OVERALL UI CHANGE" sub-heading.
  *
  * A page break precedes the section so it starts on a clean page.
+ *
+ * The headings are a parameter only because the deterministic and AI tracks
+ * share this exact layout and differ solely in what they are called ("UI
+ * DOCUMENTATION" vs "AI UI DOCUMENTATION") — the alternative was a second
+ * copy of the whole renderer. Everything else, including the AI section's
+ * output for any given summary, is unchanged.
  */
-function renderAiSummary(out: Paragraph[], summary: AiSummaryResult): void {
-  // Page break before the AI section.
+function renderSummarySection(
+  out: Paragraph[],
+  summary: AiSummaryResult,
+  headings: { single: string; comparison: string },
+): void {
+  // Page break before the section.
   out.push(
     new Paragraph({
       spacing: { before: 0, after: 0 },
@@ -301,7 +328,7 @@ function renderAiSummary(out: Paragraph[], summary: AiSummaryResult): void {
     }),
   );
 
-  const heading = summary.type === 'comparison' ? 'AI UI COMPARISON' : 'AI UI DOCUMENTATION';
+  const heading = summary.type === 'comparison' ? headings.comparison : headings.single;
 
   out.push(
     new Paragraph({

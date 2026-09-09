@@ -210,6 +210,8 @@ async function handle(
       newUrl?: string;
       title?: string;
       dataEntryMode?: string;
+      includeGeneralInDoc?: boolean;
+      includeAiInDoc?: boolean;
     };
 
     const oldUrl = validUrl(body.oldUrl);
@@ -228,6 +230,10 @@ async function handle(
       ...(newUrl ? { newUrl } : {}),
       ...(body.title ? { title: body.title } : {}),
       dataEntryMode,
+      // Document inclusion only. Absent means on, so a caller that sends
+      // neither field gets the same document it would have got before.
+      includeGeneralInDoc: body.includeGeneralInDoc !== false,
+      includeAiInDoc: body.includeAiInDoc !== false,
       userId,
     });
     return sendJson(res, 202, {
