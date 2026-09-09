@@ -225,26 +225,26 @@
     /* Bottom-anchored column: the newest toast sits nearest the corner and
        the stack grows upward, so older ones drift away from the eye and
        expire from the top. */
-    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
     pointer-events: none;
   }
   .toast {
     pointer-events: none;
-    display: flex; align-items: flex-start; gap: 9px;
+    display: flex; align-items: flex-start; gap: 12px;
     background: var(--panel); border: 1px solid var(--border);
-    border-left: 3px solid var(--ok); border-radius: 8px;
+    border-left: 4px solid var(--ok); border-radius: 10px;
     /* A fixed width rather than content-sizing: stacked toasts of different
        label lengths otherwise give the column a ragged left edge. */
-    padding: 10px 14px 10px 12px; width: min(300px, 100%);
-    box-shadow: 0 4px 14px rgba(0,0,0,.14);
+    padding: 15px 20px 15px 17px; width: min(390px, 100%);
+    box-shadow: 0 6px 20px rgba(0,0,0,.17);
     animation: toastIn .18s ease-out;
   }
   .toast.leaving { opacity: 0; transform: translateY(4px); transition: opacity .25s, transform .25s; }
-  .toast .tick { color: var(--ok); font-weight: 700; line-height: 1.35; flex: none; }
+  .toast .tick { color: var(--ok); font-weight: 700; font-size: 18px; line-height: 1.3; flex: none; }
   .toast .toastText { min-width: 0; }
-  .toast .toastTitle { font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+  .toast .toastTitle { font-size: 16px; font-weight: 600; line-height: 1.3; }
   .toast .toastDetail {
-    font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 1px;
+    font-size: 14.5px; color: var(--muted); line-height: 1.45; margin-top: 3px;
     overflow-wrap: anywhere;
   }
   .toast .toastDetail strong { color: var(--text); font-weight: 600; }
