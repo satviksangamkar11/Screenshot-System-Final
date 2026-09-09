@@ -794,12 +794,15 @@
       });
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
-        setStatus('Could not confirm: ' + (d.error || 'unknown error'));
+        const msg = 'Could not confirm: ' + (d.error || 'unknown error');
+        setStatus(msg);
+        appendLog('error', '[manual] ' + action + ' failed: ' + (d.error || 'unknown error'));
       } else {
         els.manualTextInput.value = '';
       }
     } catch (e) {
       setStatus('Could not confirm: ' + e.message);
+      appendLog('error', '[manual] ' + action + ' failed: ' + e.message);
     } finally {
       btn.disabled = false;
     }
