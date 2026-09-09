@@ -777,9 +777,12 @@
    * field is focused, so it works for any of them without per-field logic.
    */
   els.liveView.addEventListener('keydown', (e) => {
+    appendLog('', '[live-key] ' + e.key);
     if (STANDALONE_MODIFIER_KEYS.has(e.key)) return;
     e.preventDefault();
-    sendInput({ type: 'key', key: e.key, modifiers: cdpModifiers(e) });
+    sendInput({ type: 'key', key: e.key, modifiers: cdpModifiers(e) }).then((ok) => {
+      appendLog(ok ? '' : 'error', '[live-key] dispatch ' + (ok ? 'ok' : 'FAILED') + ' for "' + e.key + '"');
+    });
   });
 
   // A small fixed set of forwarded keys for keyboard-driven UI (closing
