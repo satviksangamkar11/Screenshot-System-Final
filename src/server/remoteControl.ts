@@ -46,6 +46,7 @@ export class RemoteControl {
   async start(): Promise<void> {
     let frameCount = 0;
     try {
+      if (this.page.isClosed()) return;
       const session = await this.page.context().newCDPSession(this.page);
       this.session = session;
 
