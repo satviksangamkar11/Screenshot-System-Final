@@ -177,6 +177,22 @@
   }
   .manualControls button.skip { border-color: var(--warn); background: transparent; color: var(--warn); }
 
+  .toggleRow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: absolute; inset: 0; background: var(--border); border-radius: 20px;
+    transition: background .15s; cursor: pointer;
+  }
+  .switch .track::before {
+    content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%; transition: transform .15s;
+  }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::before { transform: translateX(16px); }
+  .switch input:disabled + .track { opacity: .5; cursor: not-allowed; }
+  .toggleRow label.switchLabel { font-size: 13.5px; font-weight: 600; cursor: pointer; }
+
   /* --- Summary tabs (General Summary / AI Summary) ----------------------- */
   .tabBar {
     display: flex; gap: 4px; border-bottom: 1px solid var(--border);
@@ -253,6 +269,15 @@
       <input type="radio" name="dataEntryMode" value="manual"> Manual
     </label>
     <span class="modeHint" id="modeHint">Fills every field automatically, as it always has.</span>
+  </div>
+
+  <div class="toggleRow">
+    <label class="switch">
+      <input type="checkbox" id="aiSummaryToggle">
+      <span class="track"></span>
+    </label>
+    <label class="switchLabel" for="aiSummaryToggle">AI Summary</label>
+    <span class="modeHint">Off by default — the General Summary is always produced, with no API call. Turn this on to also have an LLM write a complete, evidence-checked explanation into the AI Summary tab and the document.</span>
   </div>
 
   <div class="columns">
@@ -369,6 +394,7 @@
     generate: $('generate'), status: $('status'),
     resultPanel: $('resultPanel'), resultNotice: $('resultNotice'),
     summaryTable: $('summaryTable'), download: $('download'),
+    aiSummaryToggle: $('aiSummaryToggle'),
     summaryPanel: $('summaryPanel'),
     tabGeneral: $('tabGeneral'), tabAi: $('tabAi'),
     generalDot: $('generalDot'), aiDot: $('aiDot'),
@@ -1265,7 +1291,15 @@
       els.generalSummaryBody.innerHTML = spinnerLine('Deriving documentation points…');
     }
 
-    // AI tab.
+    // AI tab. With the toggle off no LLM call is ever made, so say that
+    // plainly rather than showing a spinner for work that will never start.
+    if (!els.aiSummaryToggle.checked && !d.aiSummary && d.aiSummaryStatus !== 'error') {
+      els.aiSummaryBody.innerHTML =
+        '<div class="summaryMeta">AI Summary is off. Switch it on at the top of the page to have an ' +
+        'LLM write a complete, evidence-checked explanation — this is the only step that calls an API.</div>';
+      setTabDot(els.aiDot, '');
+      return;
+    }
     if (d.aiSummaryStatus === 'running' || !d.aiSummaryStatus) {
       els.aiSummaryBody.innerHTML = spinnerLine('Writing the AI explanation…');
       return;
@@ -1321,20 +1355,48 @@
     if (!status.hasDocument) return; // not ready yet
 
     els.summaryPanel.classList.remove('hidden');
-    if (!els.aiSummaryBody.innerHTML) {
+    if (!els.generalSummaryBody.innerHTML) {
       els.generalSummaryBody.innerHTML = spinnerLine('Deriving documentation points…');
+    }
+
+    // The General Summary needs no request at all — the server starts it as
+    // soon as the document exists. Only the AI track is asked for, and only
+    // when the operator turned it on, so an API call is never made otherwise.
+    if (!els.aiSummaryToggle.checked) {
+      renderSummaries(status);
+      pollSummaries();
+      return;
+    }
+
+    if (!els.aiSummaryBody.innerHTML || !status.aiSummaryStatus) {
       els.aiSummaryBody.innerHTML = spinnerLine('Writing the AI explanation…');
     }
     try {
       const r = await fetch('/api/jobs/' + currentJob + '/ai-summary', { method: 'POST' });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Could not start summary generation');
+      if (!r.ok) throw new Error(d.error || 'Could not start the AI summary');
       pollSummaries();
     } catch (e) {
       els.aiSummaryBody.innerHTML = '<div class="notice err">' + escapeHtml(e.message) + '</div>';
       setTabDot(els.aiDot, 'err');
     }
   }
+
+  // The toggle can be flipped before Generate is clicked or any time after.
+  // Turning it on once a document already exists starts the AI track then;
+  // turning it off never cancels a call already in flight, it just stops the
+  // next job from making one.
+  els.aiSummaryToggle.addEventListener('change', () => {
+    if (els.aiSummaryToggle.checked) {
+      maybeStartSummaries();
+      return;
+    }
+    if (!currentJob) return;
+    fetch('/api/jobs/' + currentJob)
+      .then((r) => r.json())
+      .then(renderSummaries)
+      .catch(() => {});
+  });
 
   function escapeHtml(s) {
     return String(s).replace(/[<>&]/g, (c) =>

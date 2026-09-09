@@ -383,6 +383,11 @@ async function runJob(job: Job, input: AdHocInput): Promise<void> {
     job.summary = summary;
     job.runIds = runIds;
     job.status = 'done';
+
+    // Always available, never gated on the AI toggle: it is a pure function of
+    // the trace already on disk, costs no API call, and the General tab has to
+    // be populated whether or not the operator asked for an AI summary.
+    startGeneralSummary(job);
   } catch (err) {
     job.status = 'error';
     job.error = err instanceof Error ? err.message : String(err);
@@ -449,15 +454,43 @@ export function startStandaloneLogin(url: string, userId?: string): string {
 }
 
 /**
- * Starts summary generation for a finished job, if it hasn't been started
- * already (the client can fire this more than once — e.g. on reconnect — and
- * generation is not cheap or idempotent-safe to repeat).
+ * Builds the deterministic "General Summary" for a finished job.
  *
- * Produces both summaries the UI's two tabs need: the deterministic
- * "General Summary" and the LLM-written "AI Summary". They run concurrently
- * and independently, so a failed LLM call still leaves a usable General tab.
- * Callers read both off the job via the existing status poll, the same
- * pattern the rest of this file uses for everything else long-running.
+ * Deliberately independent of `requestAiSummary()`: this track involves no
+ * LLM and no network, so it runs for every job the moment a document exists,
+ * regardless of whether the operator switched the AI Summary toggle on. A
+ * failure has to reach the client as an error state — logging it server-side
+ * only would leave the General tab waiting forever on a result that is never
+ * coming.
+ */
+function startGeneralSummary(job: Job): void {
+  if (!job.runIds || Object.keys(job.runIds).length === 0) return;
+  if (job.generalSummaryStatus === 'running' || job.generalSummaryStatus === 'done') return;
+
+  job.generalSummaryStatus = 'running';
+  job.generalSummaryError = undefined;
+
+  generateDocumentationPoints(job.runIds)
+    .then((general) => {
+      job.generalSummary = general;
+      job.generalSummaryStatus = 'done';
+    })
+    .catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      job.generalSummaryStatus = 'error';
+      job.generalSummaryError = message;
+      log.warn(`Could not build General Summary: ${message}`);
+    });
+}
+
+/**
+ * Starts the LLM-backed "AI Summary" track for a finished job, if it hasn't
+ * been started already (the client can fire this more than once — e.g. on
+ * reconnect — and an LLM call is neither cheap nor idempotent-safe to repeat).
+ *
+ * Called only when the operator has the AI Summary toggle on, so switching it
+ * off means no API call is ever made. The General Summary is not started here
+ * — see `startGeneralSummary`, which runs for every job either way.
  */
 export function requestAiSummary(jobId: string): { ok: true } | { ok: false; error: string } {
   const job = jobs.get(jobId);
@@ -471,24 +504,6 @@ export function requestAiSummary(jobId: string): { ok: true } | { ok: false; err
 
   job.aiSummaryStatus = 'running';
   job.aiSummaryError = undefined;
-
-  // Deterministic summary runs on its own track — the General tab must not
-  // depend on the LLM call succeeding. A failure here has to reach the client
-  // as an error state; logging it server-side only would leave the tab
-  // waiting forever on a result that is never coming.
-  job.generalSummaryStatus = 'running';
-  job.generalSummaryError = undefined;
-  generateDocumentationPoints(job.runIds)
-    .then((general) => {
-      job.generalSummary = general;
-      job.generalSummaryStatus = 'done';
-    })
-    .catch((err) => {
-      const message = err instanceof Error ? err.message : String(err);
-      job.generalSummaryStatus = 'error';
-      job.generalSummaryError = message;
-      log.warn(`Could not build General Summary: ${message}`);
-    });
 
   generateAiDocumentationPoints(job.runIds)
     .then(async (result) => {
