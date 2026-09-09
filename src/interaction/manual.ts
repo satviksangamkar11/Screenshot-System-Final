@@ -309,14 +309,14 @@ async function logVerificationDiagnostics(
       })
       .catch(() => ({ id: 'n/a', value: 'n/a' }));
 
-    log.debug(
+    log.warn(
       `  [manual-verify] label="${label}" selector="${selector}" matchedBySelector=${matchedCount} ` +
         `editableDescendants=${editableCount} resolved.tagName=${resolved.tagName} resolved.id="${resolved.id}" ` +
         `resolved.type="${resolved.type}" resolved.value="${resolved.value}" ` +
         `activeElement.id="${active.id}" activeElement.value="${active.value}"`,
     );
   } catch (err) {
-    log.debug(
+    log.warn(
       `  [manual-verify] diagnostics failed for "${label}": ${err instanceof Error ? err.message : String(err)}`,
     );
   }
