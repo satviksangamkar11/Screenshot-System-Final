@@ -111,7 +111,7 @@ export async function runManualStep(
   }
 
   // Verify the submitted value — with one automatic retry on failure.
-  const verification = async () => {
+  const verification = async (): Promise<{ valid: boolean; reason: string }> => {
     if (control.kind === 'input' || control.kind === 'textarea') {
       return await verifyFieldSubmission(ctx.page, control, selector);
     } else if (
@@ -123,14 +123,14 @@ export async function runManualStep(
     ) {
       return await verifySelectionSubmission(ctx.page, control, selector);
     }
-    return true; // no verification needed for other control kinds
+    return { valid: true, reason: 'not-applicable' }; // no verification needed for other control kinds
   };
 
-  let verified = await verification();
+  let { valid: verified, reason } = await verification();
 
   if (!verified) {
     log.warn(
-      `  [manual] ${control.kind} "${label}" verification failed; offering one retry`,
+      `  [manual] ${control.kind} "${label}" verification failed (${reason}); offering one retry`,
     );
     gate.setItemStatus(control.dedupeKey, 'waiting');
 
@@ -153,16 +153,16 @@ export async function runManualStep(
     }
 
     // Try verification again
-    verified = await verification();
+    ({ valid: verified, reason } = await verification());
 
     if (!verified) {
       log.error(
-        `  [manual] ${control.kind} "${label}" verification failed on retry; marking for manual review`,
+        `  [manual] ${control.kind} "${label}" verification failed on retry (${reason}); marking for manual review`,
       );
       gate.setItemStatus(control.dedupeKey, 'failed');
       return {
         documented: false,
-        note: 'verification failed on retry — field not documented, please review manually',
+        note: `verification failed on retry (${reason}) — field not documented, please review manually`,
       };
     }
   }
@@ -216,7 +216,7 @@ async function verifySelectionSubmission(
   page: Page,
   control: ControlDescriptor,
   selector: string,
-): Promise<boolean> {
+): Promise<{ valid: boolean; reason: string }> {
   try {
     // First try to get the inner editable element (if one exists inside the wrapper).
     const inner = await editableLocator(page, selector);
@@ -247,14 +247,12 @@ async function verifySelectionSubmission(
       .catch(() => ({ selected: false, value: '', source: 'error' }));
 
     if (!result.selected) {
-      log.debug(`  [manual] selection verification failed (${result.source}): no value`);
-      return false;
+      return { valid: false, reason: `no value (${result.source})` };
     }
 
-    return true;
+    return { valid: true, reason: 'ok' };
   } catch {
-    log.debug('  [manual] selection verification error');
-    return false;
+    return { valid: false, reason: 'verification-error' };
   }
 }
 
@@ -267,7 +265,7 @@ async function verifyFieldSubmission(
   page: Page,
   control: ControlDescriptor,
   selector: string,
-): Promise<boolean> {
+): Promise<{ valid: boolean; reason: string }> {
   try {
     // Resolve through editableLocator to reach the actual <input> or <textarea>.
     const target = await editableLocator(page, selector);
@@ -301,14 +299,8 @@ async function verifyFieldSubmission(
       })
       .catch(() => ({ valid: false, reason: 'evaluate-error' }));
 
-    if (!result.valid) {
-      log.debug(`  [manual] field verification failed: ${result.reason}`);
-      return false;
-    }
-
-    return true;
+    return result;
   } catch {
-    log.debug('  [manual] field verification error');
-    return false;
+    return { valid: false, reason: 'verification-error' };
   }
 }
