@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page } from '../automation/types.js';
 import type {
@@ -11,6 +11,7 @@ import type {
   VersionId,
 } from '../types.js';
 import { captureScrollSegments } from './scroll-capture.js';
+import { emitCaptured } from './events.js';
 import { log } from '../util/logger.js';
 
 /**
@@ -97,6 +98,12 @@ export class EvidenceStore {
 
     let fileName = `${baseName}.png`;
     let extraFiles: string[] = [];
+    /*
+     * Files this point actually put on disk, as opposed to shots requested.
+     * Stays 0 when the capture threw, which is what keeps the live
+     * confirmation below honest — see evidence/events.ts.
+     */
+    let persistedShots = 0;
 
     try {
       if (isFullPage) {
@@ -113,10 +120,12 @@ export class EvidenceStore {
           fileName = segments[0]!;
           extraFiles = segments.slice(1);
           this.shotCount += segments.length;
+          persistedShots = segments.length;
         }
       } else {
         await screenshotWithRetry(args.page, path.join(this.screenshotDir, fileName));
         this.shotCount++;
+        persistedShots = 1;
       }
     } catch (err) {
       /*
@@ -157,6 +166,23 @@ export class EvidenceStore {
     if (args.controlKind) record.controlKind = args.controlKind;
 
     this.evidence.push(record);
+
+    /*
+     * Only here — record made, image confirmed on disk — is the point
+     * genuinely documented rather than merely attempted, so this is the one
+     * place a live "captured" confirmation can be raised without it
+     * sometimes being a lie. The `catch` above deliberately keeps the
+     * Evidence record for a failed shot, so the record alone proves nothing.
+     */
+    if (persistedShots > 0 && (await isOnDisk(path.join(this.screenshotDir, fileName)))) {
+      emitCaptured({
+        seq,
+        version: this.version,
+        label: args.label || args.canonicalLabel || args.interactionType,
+        screenshots: persistedShots,
+      });
+    }
+
     return record;
   }
 
@@ -197,7 +223,20 @@ export class EvidenceStore {
       );
     }
 
-    return segments.map((f) => path.join('screenshots', f));
+    /*
+     * Verified here rather than in `finalizeFullPage`, which is synchronous
+     * and would otherwise have to take on trust that every name it was
+     * handed is a real file. Dropping a name that isn't costs nothing —
+     * `assembleDocument` skips a missing screenshot anyway — and it lets the
+     * "Full Page" point make the same on-disk claim `capture()` does.
+     */
+    const present: string[] = [];
+    for (const f of segments) {
+      if (await isOnDisk(path.join(this.screenshotDir, f))) {
+        present.push(path.join('screenshots', f));
+      }
+    }
+    return present;
   }
 
   /**
@@ -225,6 +264,14 @@ export class EvidenceStore {
     if (segments.length > 1) record.additionalScreenshots = segments.slice(1);
 
     this.evidence.push(record);
+    // Every segment reaching here was confirmed on disk by
+    // `captureFullPageSection`, so this point is documented for real.
+    emitCaptured({
+      seq,
+      version: this.version,
+      label: 'Full Page',
+      screenshots: segments.length,
+    });
     return record;
   }
 
@@ -346,6 +393,23 @@ async function screenshotWithRetry(page: Page, filePath: string): Promise<void> 
   } catch {
     await new Promise((r) => setTimeout(r, 500));
     await page.screenshot({ path: filePath, fullPage: false, animations: 'disabled' });
+  }
+}
+
+/**
+ * Whether a screenshot really landed: present, and not a zero-byte stub.
+ *
+ * A resolved `page.screenshot` call is very nearly this claim but not quite
+ * it, and the gap is the whole reason this exists — the live confirmation
+ * raised from `capture()` is only worth showing if it means the evidence is
+ * on disk, so it is checked rather than assumed.
+ */
+async function isOnDisk(filePath: string): Promise<boolean> {
+  try {
+    const info = await stat(filePath);
+    return info.isFile() && info.size > 0;
+  } catch {
+    return false;
   }
 }
 

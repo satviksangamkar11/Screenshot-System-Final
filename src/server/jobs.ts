@@ -9,6 +9,7 @@ import { captureLogin, probeNeedsSignIn, SessionError } from '../browser/manager
 import type { AppConfig } from '../config/schema.js';
 import type { VersionId } from '../types.js';
 import { addLogSink, log } from '../util/logger.js';
+import { addCaptureSink } from '../evidence/events.js';
 import { InMemoryManualGate, type ManualQueueItem } from '../state/manualGate.js';
 import {
   generateAiDocumentationPoints,
@@ -42,6 +43,27 @@ export interface JobLogLine {
   at: number;
 }
 
+/**
+ * One point whose evidence was confirmed written to disk, for the front end's
+ * live capture confirmation. Raised by `EvidenceStore` (see
+ * evidence/events.ts) only after the screenshot exists — never when one is
+ * merely requested — so the toast the operator sees can be trusted.
+ */
+export interface JobCapture {
+  /**
+   * Job-scoped and strictly increasing, which the run's own `seq` is not:
+   * that restarts at 1 for the second version, so a two-version job would
+   * hand the client repeated ids and it would show each old-version point
+   * again while capturing the new one. The client only has to remember the
+   * highest id it has shown.
+   */
+  id: number;
+  version: VersionId;
+  label: string;
+  screenshots: number;
+  at: number;
+}
+
 /** The sign-in currently waiting on the operator. */
 export interface AuthStage {
   version: VersionId;
@@ -71,6 +93,8 @@ export interface Job {
    */
   manualQueue: ManualQueueItem[];
   activeManualId?: string;
+  /** Recent confirmed captures, newest last; only the tail is ever needed. */
+  captures: JobCapture[];
   /** Versions that could not be captured because sign-in did not complete. */
   needsLoginFor?: VersionId[];
   documentPath?: string;
@@ -161,6 +185,7 @@ export function startJob(input: AdHocInput): Job {
     dataEntryMode: app.dataEntryMode,
     input,
     manualQueue: [],
+    captures: [],
     log: [],
     startedAt: Date.now(),
   };
@@ -310,6 +335,24 @@ async function runJob(job: Job, input: AdHocInput): Promise<void> {
     if (job.log.length > 800) job.log.splice(0, job.log.length - 800);
   });
 
+  /*
+   * Separate from the log sink on purpose: the front end needs the label and
+   * the fact of a successful write as data, not a line of prose it would
+   * have to parse back out of the Progress log.
+   */
+  let captureCounter = 0;
+  const detachCaptures = addCaptureSink((event) => {
+    job.captures.push({
+      id: ++captureCounter,
+      version: event.version,
+      label: event.label,
+      screenshots: event.screenshots,
+      at: event.at,
+    });
+    // The client only ever renders the newest few; the rest is dead weight.
+    if (job.captures.length > 60) job.captures.splice(0, job.captures.length - 60);
+  });
+
   let manualGate: InMemoryManualGate | undefined;
   if (job.dataEntryMode === 'manual') {
     manualGate = new InMemoryManualGate();
@@ -398,6 +441,7 @@ async function runJob(job: Job, input: AdHocInput): Promise<void> {
     remoteControls.delete(job.id);
     loginRemoteControls.delete(job.id);
     detach();
+    detachCaptures();
     job.finishedAt = Date.now();
   }
 }

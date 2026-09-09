@@ -524,7 +524,7 @@ src/server/
 ├── remoteControl.ts    CDP screencast + input forwarding (live view during sign-in / manual mode)
 ├── userId.ts           per-browser cookie identity — session isolation on a shared server
 └── public/
-    ├── index.html       the SPA: URL form, mode toggle, Summary tabs, live view, log panel
+    ├── index.html       the SPA: URL form, mode toggle, Summary tabs, live view, log panel, capture toasts
     └── live.html         standalone full-tab live view page
 ```
 
@@ -534,6 +534,7 @@ src/server/
 |---|---|
 | `generalSummaryStatus` / `generalSummary` / `generalSummaryError` | Deterministic track |
 | `aiSummaryStatus` / `aiSummary` / `aiSummaryError` | LLM track |
+| `captures` | Tail of the points whose evidence was confirmed written — drives the capture toasts (§10.3) |
 
 The client polls until **both** report a settled state. Polling on one status alone would strand the other tab whenever it finished second.
 
@@ -562,7 +563,41 @@ A **CDP screencast** of the real browser, streamed into the page (`remoteControl
 
 Input is forwarded back to the browser: keyboard (including modifier combinations), mouse, and scrolling. The view can be popped out to its own tab at `/live/jobs/<jobId>` (`live.html`) when the inline panel is too small.
 
-### 10.3 Session isolation and re-authentication
+### 10.3 Capture confirmations (toasts)
+
+Each time a point's evidence lands on disk, a small toast appears in the
+bottom-right corner of the page for ~2.6s:
+
+```
+✓ Screenshot captured
+  Payment Type evidence saved
+```
+
+The message means what it says, and that is the whole design constraint:
+
+- **Raised on success, not on request.** `EvidenceStore.capture()` deliberately
+  keeps the `Evidence` record even when a screenshot fails — its `catch` logs a
+  warning and carries on — and `assembleDocument` later drops any point whose
+  file is missing, so "a record exists" is not the same claim as "this is in the
+  document". The confirmation is emitted only once the image is verified present
+  and non-empty on disk.
+- **Structured, not scraped.** `EvidenceStore` emits a `CaptureEvent`
+  (`src/evidence/events.ts`) through a sink registry mirroring the logger's;
+  `jobs.ts` subscribes for the life of a run and appends to `job.captures`. The
+  client diffs on id rather than parsing the Progress log back into data.
+- **Job-scoped ids.** A run's own `seq` restarts at 1 for the second version, so
+  the job assigns its own strictly-increasing id; the client remembers only the
+  highest it has shown.
+- **Never in the way.** The stack is `position: fixed` and click-through
+  (`pointer-events: none`), because it overlaps exactly where Manual mode's
+  Submit/Skip controls and the live view can sit. At most three are visible; a
+  burst between two polls shows the newest and drops the rest rather than
+  queueing stale confirmations behind the current one.
+
+Both data-entry modes raise them, and they are additional to — not a
+replacement for — the green "captured X" lines in the Progress log.
+
+### 10.4 Session isolation and re-authentication
 
 - Sessions are stored **per origin, per browser identity** — two versions on the same host require only one sign-in.
 - Every sign-in completes **before any capture starts**, so a run never stalls halfway waiting for a human.

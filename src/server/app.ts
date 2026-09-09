@@ -258,6 +258,9 @@ async function handle(
       dataEntryMode: job.dataEntryMode,
       manualQueue: job.manualQueue,
       activeManualId: job.activeManualId ?? null,
+      // Tail only: the client shows the ones it hasn't seen yet and drops the
+      // rest, so sending the whole run's worth would be pure payload.
+      captures: job.captures.slice(-20),
       aiSummaryStatus: job.aiSummaryStatus ?? null,
       aiSummary: job.aiSummary ?? null,
       aiSummaryError: job.aiSummaryError ?? null,

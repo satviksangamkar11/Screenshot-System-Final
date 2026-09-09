@@ -213,6 +213,50 @@
   .tabBtn .tabDot.ok { background: var(--ok); opacity: 1; }
   .tabBtn .tabDot.err { background: var(--err); opacity: 1; }
 
+  /* --- Capture toasts ---------------------------------------------------
+     Raised for each point whose evidence the server confirmed on disk. They
+     sit above everything but are click-through end to end (`pointer-events:
+     none`, on the stack and every toast), because they overlap the bottom
+     right of the page -- where Manual mode's Submit/Skip controls and the
+     live view can both land -- and a confirmation that swallowed the very
+     click it was confirming would be worse than no confirmation at all. */
+  .toastStack {
+    position: fixed; right: 20px; bottom: 20px; z-index: 100;
+    /* Bottom-anchored column: the newest toast sits nearest the corner and
+       the stack grows upward, so older ones drift away from the eye and
+       expire from the top. */
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: none;
+    display: flex; align-items: flex-start; gap: 9px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 3px solid var(--ok); border-radius: 8px;
+    /* A fixed width rather than content-sizing: stacked toasts of different
+       label lengths otherwise give the column a ragged left edge. */
+    padding: 10px 14px 10px 12px; width: min(300px, 100%);
+    box-shadow: 0 4px 14px rgba(0,0,0,.14);
+    animation: toastIn .18s ease-out;
+  }
+  .toast.leaving { opacity: 0; transform: translateY(4px); transition: opacity .25s, transform .25s; }
+  .toast .tick { color: var(--ok); font-weight: 700; line-height: 1.35; flex: none; }
+  .toast .toastText { min-width: 0; }
+  .toast .toastTitle { font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+  .toast .toastDetail {
+    font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 1px;
+    overflow-wrap: anywhere;
+  }
+  .toast .toastDetail strong { color: var(--text); font-weight: 600; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .toast { animation: none; }
+    .toast.leaving { transition: opacity .25s; transform: none; }
+  }
+  @media (max-width: 480px) {
+    .toastStack { right: 12px; bottom: 12px; left: 12px; }
+  }
+
   .summaryMeta { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
   .summaryBody ul { margin: 0; padding: 0; list-style: none; }
   .summaryBody li { margin: 7px 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
@@ -384,6 +428,10 @@
   </div>
 </main>
 
+<!-- Live capture confirmations. `polite` so a screen reader finishes what the
+     operator is doing before announcing one, rather than cutting across it. -->
+<div class="toastStack" id="toastStack" role="status" aria-live="polite"></div>
+
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -413,6 +461,7 @@
     manualTextInput: $('manualTextInput'),
     manualSubmit: $('manualSubmit'), manualSkip: $('manualSkip'),
     manualWaitHint: $('manualWaitHint'),
+    toastStack: $('toastStack'),
   };
 
   const modeRadios = Array.from(document.querySelectorAll('input[name="dataEntryMode"]'));
@@ -609,6 +658,8 @@
     selectSummaryTab('general');
     els.logPanel.classList.remove('hidden');
     els.log.textContent = '';
+    lastCaptureId = 0;
+    clearCaptureToasts();
     setStatus('Starting…', true);
 
     try {
@@ -672,6 +723,86 @@
     const line = cls ? '<span class="' + cls + '">' + stamped + '</span>' : stamped;
     els.log.innerHTML += (els.log.innerHTML ? '\n' : '') + line;
     els.log.scrollTop = els.log.scrollHeight;
+  }
+
+  // --- Capture toasts ---------------------------------------------------------
+
+  /*
+   * The highest capture id already shown. The server sends the tail of the
+   * job's confirmed captures on every poll, so this is what turns that
+   * repeating window into "the ones that are new since last tick".
+   */
+  let lastCaptureId = 0;
+  const TOAST_MS = 2600;
+  const MAX_VISIBLE_TOASTS = 3;
+
+  function showCaptureToast(label) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+
+    const tick = document.createElement('span');
+    tick.className = 'tick';
+    tick.textContent = '✓';
+    // The title already says "Screenshot captured"; announcing the tick as
+    // well would just add a stray "check mark" to what a screen reader reads.
+    tick.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('div');
+    text.className = 'toastText';
+
+    const title = document.createElement('div');
+    title.className = 'toastTitle';
+    title.textContent = 'Screenshot captured';
+
+    const detail = document.createElement('div');
+    detail.className = 'toastDetail';
+    const name = document.createElement('strong');
+    name.textContent = label;
+    detail.appendChild(name);
+    detail.appendChild(document.createTextNode(' evidence saved'));
+
+    text.appendChild(title);
+    text.appendChild(detail);
+    toast.appendChild(tick);
+    toast.appendChild(text);
+    els.toastStack.appendChild(toast);
+
+    // A fast run can confirm several points between two polls; keeping only
+    // the newest few stops the stack from growing up the whole viewport.
+    while (els.toastStack.children.length > MAX_VISIBLE_TOASTS) {
+      els.toastStack.removeChild(els.toastStack.firstChild);
+    }
+
+    setTimeout(() => {
+      toast.classList.add('leaving');
+      // Matches the .leaving transition, so the node goes once it is invisible.
+      setTimeout(() => toast.remove(), 300);
+    }, TOAST_MS);
+  }
+
+  function clearCaptureToasts() {
+    els.toastStack.innerHTML = '';
+  }
+
+  /**
+   * Shows a toast for each capture the server has confirmed since the last
+   * poll. Every entry here is a point whose screenshot the server verified on
+   * disk (see evidence/events.ts) -- a requested capture that failed never
+   * reaches this list, which is what makes the message worth trusting.
+   */
+  function renderCaptureToasts(captures) {
+    if (!Array.isArray(captures) || captures.length === 0) return;
+
+    const fresh = captures.filter((c) => c && typeof c.id === 'number' && c.id > lastCaptureId);
+    if (fresh.length === 0) return;
+
+    lastCaptureId = fresh[fresh.length - 1].id;
+    // Only the newest few are worth showing: with a 1s poll a burst can carry
+    // more than the stack holds, and toasting all of them would just queue up
+    // stale confirmations behind the current one.
+    for (const c of fresh.slice(-MAX_VISIBLE_TOASTS)) {
+      showCaptureToast(c.label || 'Screenshot');
+    }
   }
 
   /** Host portion of a URL, for display; falls back to the raw value. */
@@ -1067,6 +1198,11 @@
         if (!r.ok) throw new Error(d.error || 'Lost the job');
 
         renderLog(d.log);
+        // Ahead of every status branch below: several of them return early,
+        // and captures continue to land during Manual mode's waits and during
+        // a mid-run sign-in, so confirming them must not depend on which
+        // branch this tick happens to take.
+        renderCaptureToasts(d.captures);
 
         // Sign-in phase: sign in directly in the live view below.
         if (d.status === 'awaiting-auth' && d.authStage) {
