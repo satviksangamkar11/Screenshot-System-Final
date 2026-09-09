@@ -791,6 +791,7 @@ export class Explorer {
               ...(c.section ? { section: c.section } : {}),
               ...(tab ? { tab } : {}),
               ...(options ? { options } : {}),
+              ...(c.inputType ? { inputType: c.inputType } : {}),
               status: 'waiting' as const,
             };
           }),

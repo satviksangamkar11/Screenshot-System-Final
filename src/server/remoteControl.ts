@@ -108,12 +108,22 @@ export class RemoteControl {
 
   /** Forwards a click at the given coordinates, in the page's own viewport space. */
   async click(x: number, y: number): Promise<void> {
-    await this.page.mouse.click(x, y).catch(() => undefined);
+    try {
+      await this.page.mouse.click(x, y);
+    } catch (err) {
+      log.warn(`  [remote] click(${x}, ${y}) failed: ${errMsg(err)}`);
+      throw err;
+    }
   }
 
   /** Forwards a single named key (Enter, Tab, Escape, Backspace, arrows, ...). */
   async key(key: string): Promise<void> {
-    await this.page.keyboard.press(key).catch(() => undefined);
+    try {
+      await this.page.keyboard.press(key);
+    } catch (err) {
+      log.warn(`  [remote] key(${key}) failed: ${errMsg(err)}`);
+      throw err;
+    }
   }
 
   /**
@@ -122,6 +132,11 @@ export class RemoteControl {
    * correctly with no IME/composition handling needed on either side.
    */
   async insertText(text: string): Promise<void> {
-    await this.page.keyboard.insertText(text).catch(() => undefined);
+    try {
+      await this.page.keyboard.insertText(text);
+    } catch (err) {
+      log.warn(`  [remote] insertText failed: ${errMsg(err)}`);
+      throw err;
+    }
   }
 }

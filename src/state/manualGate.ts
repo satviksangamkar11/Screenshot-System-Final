@@ -24,6 +24,8 @@ export interface ManualQueueItem {
   status: ManualStatus;
   /** For select/multiSelect/valueHelp controls: the actual available options. */
   options?: { value: string; label: string }[];
+  /** For input/textarea controls: the underlying HTML input type (text, number, ...). */
+  inputType?: string;
 }
 
 export interface ManualGate {

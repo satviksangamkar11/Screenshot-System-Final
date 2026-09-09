@@ -87,9 +87,19 @@ export async function runManualStep(
      * inserting in the middle of or after whatever was already there.
      */
     const target = await editableLocator(ctx.page, selector);
-    await target
-      .click({ timeout: ctx.budgets.controlTimeoutMs, clickCount: 3 })
-      .catch(() => undefined);
+    try {
+      await target.click({ timeout: ctx.budgets.controlTimeoutMs, clickCount: 3 });
+    } catch (err) {
+      // Previously swallowed silently, so a field that was never actually
+      // focused looked identical to one waiting normally on the operator --
+      // indistinguishable from the eventual "verification failed (empty)".
+      // Surfacing it here narrows that down immediately.
+      const preLabel = control.canonicalLabel || control.label || control.id;
+      log.warn(
+        `  [manual] could not pre-focus "${preLabel}" (${err instanceof Error ? err.message : String(err)}); ` +
+          'operator will need to click the field directly in the live view',
+      );
+    }
   }
 
   const label = control.canonicalLabel || control.label || control.id;
