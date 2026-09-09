@@ -327,7 +327,7 @@
       <div class="optionsGrid" id="optionsGrid"></div>
     </div>
     <div class="manualControls" id="manualControls">
-      <input type="text" id="manualTextInput" placeholder="Type a value, then press Enter">
+      <input type="text" id="manualTextInput" placeholder="Type the value below, then press Enter or Submit Element.">
       <button id="manualSubmit">Submit Element</button>
       <button id="manualSkip" class="secondary skip">Skip</button>
     </div>
@@ -639,6 +639,10 @@
   // own RemoteControl) or '/api/logins/<id>' (standalone sign-in).
   let liveBaseUrl = null;
   let activeManualId = null;
+  // The full queue item behind `activeManualId` — kind/inputType/label,
+  // needed by the Submit button to decide whether it must forward the
+  // local text input before confirming, and what to name it in the log.
+  let activeManualItem = null;
   // Identifies the control `updateManualView` last rendered its inputs for, so
   // a poll tick that brings no change leaves the operator's live DOM alone.
   let renderedControlKey = null;
@@ -817,7 +821,44 @@
       btn.disabled = false;
     }
   }
-  els.manualSubmit.addEventListener('click', () => confirmActive('submit', els.manualSubmit));
+  /*
+   * Submit Element must forward whatever the operator typed into
+   * #manualTextInput to the remote SAP field before confirming — pressing
+   * Enter already does this (text, then Tab to commit it), but clicking
+   * Submit directly used to skip straight to confirming the manual gate,
+   * so a typed value that was never committed with Enter first was silently
+   * discarded: the gate resolved, the field stayed exactly as it was before
+   * the operator touched it, and verification downstream read it as empty.
+   */
+  async function submitManualField() {
+    if (!currentJob || !activeManualId) return;
+    const item = activeManualItem;
+    const label = (item && (item.label || item.id)) || activeManualId;
+    const isTextControl = item && (item.kind === 'input' || item.kind === 'textarea');
+    const value = els.manualTextInput.value;
+
+    if (isTextControl && value) {
+      appendLog('', '[manual-ui] sending text for ' + label);
+      const textOk = await sendInput({ type: 'text', value });
+      if (!textOk) {
+        appendLog('error', '[manual-ui] text send failed for ' + label + ' — not submitting');
+        return;
+      }
+      appendLog('', '[manual-ui] text sent for ' + label);
+
+      appendLog('', '[manual-ui] sending Tab for ' + label);
+      const tabOk = await sendInput({ type: 'key', key: 'Tab' });
+      if (!tabOk) {
+        appendLog('error', '[manual-ui] Tab send failed for ' + label + ' — not submitting');
+        return;
+      }
+      appendLog('', '[manual-ui] Tab sent for ' + label);
+    }
+
+    appendLog('', '[manual-ui] submitting ' + label);
+    await confirmActive('submit', els.manualSubmit);
+  }
+  els.manualSubmit.addEventListener('click', submitManualField);
   els.manualSkip.addEventListener('click', () => confirmActive('skip', els.manualSkip));
 
   function getInputPlaceholder(kind, inputType) {
@@ -845,7 +886,7 @@
     els.manualPanel.classList.remove('hidden');
     els.liveViewPanel.classList.remove('hidden');
     els.liveViewHeading.textContent = 'Live View';
-    els.liveViewHint.textContent = 'Click the field in the live view, type the value in the input below, then press Submit.';
+    els.liveViewHint.textContent = 'Type the value below, then press Enter or Submit Element.';
     els.manualSubmit.classList.remove('hidden');
     els.manualSkip.classList.remove('hidden');
     // Only once the queue has at least one item: guarantees `RemoteControl`
@@ -856,6 +897,7 @@
     const active = (d.manualQueue || []).find((q) => q.id === d.activeManualId);
     if (active) {
       activeManualId = active.id;
+      activeManualItem = active;
       els.manualActive.classList.remove('hidden');
       els.manualWaitHint.classList.add('hidden');
       els.manualFieldLabel.textContent = active.label;
@@ -923,6 +965,7 @@
       }
     } else {
       activeManualId = null;
+      activeManualItem = null;
       // Nothing is active, so the next control that becomes active must render
       // even if it happens to be the one rendered last (a repeated field, or
       // the same control coming back after a retry).
@@ -932,7 +975,7 @@
       els.manualOptions.classList.add('hidden');
       els.optionsGrid.innerHTML = '';
       els.manualTextInput.type = 'text';
-      els.manualTextInput.placeholder = 'Type a value, then press Enter';
+      els.manualTextInput.placeholder = 'Type the value below, then press Enter or Submit Element.';
       els.manualTextInput.disabled = false;
     }
   }
