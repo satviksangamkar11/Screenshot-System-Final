@@ -177,34 +177,52 @@
   }
   .manualControls button.skip { border-color: var(--warn); background: transparent; color: var(--warn); }
 
-  .toggleRow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex: none; }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .switch .track {
-    position: absolute; inset: 0; background: var(--border); border-radius: 20px;
-    transition: background .15s; cursor: pointer;
+  /* --- Summary tabs (General Summary / AI Summary) ----------------------- */
+  .tabBar {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border);
+    margin: -4px 0 14px;
   }
-  .switch .track::before {
-    content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
-    background: #fff; border-radius: 50%; transition: transform .15s;
+  .tabBtn {
+    font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--muted); border: 0;
+    border-bottom: 2px solid transparent; border-radius: 0;
+    padding: 8px 14px; margin-bottom: -1px;
   }
-  .switch input:checked + .track { background: var(--accent); }
-  .switch input:checked + .track::before { transform: translateX(16px); }
-  .switch input:disabled + .track { opacity: .5; cursor: not-allowed; }
-  .toggleRow label.switchLabel { font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .tabBtn:hover { color: var(--text); }
+  .tabBtn[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tabBtn .tabDot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); margin-left: 6px; vertical-align: middle; opacity: .6;
+  }
+  .tabBtn .tabDot.ok { background: var(--ok); opacity: 1; }
+  .tabBtn .tabDot.err { background: var(--err); opacity: 1; }
 
-  #aiSummaryPanel ul { margin: 0; padding: 0; list-style: none; }
-  #aiSummaryPanel li { margin: 6px 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
-  #aiSummaryPanel li.high { font-weight: 500; }
-  #aiSummaryPanel li.unresolved { color: var(--warn); }
-  #aiSummaryPanel .aiSummaryMeta { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
-  #aiSummaryPanel .overallBar {
-    margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+  .summaryMeta { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+  .summaryBody ul { margin: 0; padding: 0; list-style: none; }
+  .summaryBody li { margin: 7px 0; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+  .summaryBody li.high { font-weight: 500; }
+  .summaryBody li.unresolved { color: var(--warn); }
+
+  /* Comparison mode groups points under their change category. */
+  .catGroup { margin: 0 0 16px; }
+  .catGroup:last-child { margin-bottom: 0; }
+  .catGroup > h3 {
+    margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .catGroup > h3::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .catGroup > h3 .catCount { font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+  .overallBar {
+    margin-top: 14px; padding: 10px 12px; border-radius: 6px; font-size: 13px;
     background: var(--bg); border: 1px solid var(--border);
   }
-  #aiSummaryPanel .overallBar.major { border-color: var(--err); background: rgba(180,35,24,.07); }
-  #aiSummaryPanel .overallBar.moderate { border-color: var(--warn); background: rgba(181,71,8,.07); }
-  #aiSummaryPanel .overallBar.minor { border-color: var(--accent); background: rgba(10,110,209,.07); }
+  .overallBar.major { border-color: var(--err); background: rgba(180,35,24,.07); }
+  .overallBar.moderate { border-color: var(--warn); background: rgba(181,71,8,.07); }
+  .overallBar.minor { border-color: var(--accent); background: rgba(10,110,209,.07); }
   .catBadge {
     flex: none; font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
     padding: 1px 6px; border-radius: 3px; text-transform: uppercase;
@@ -235,15 +253,6 @@
       <input type="radio" name="dataEntryMode" value="manual"> Manual
     </label>
     <span class="modeHint" id="modeHint">Fills every field automatically, as it always has.</span>
-  </div>
-
-  <div class="toggleRow">
-    <label class="switch">
-      <input type="checkbox" id="aiSummaryToggle">
-      <span class="track"></span>
-    </label>
-    <label class="switchLabel" for="aiSummaryToggle">AI Summary</label>
-    <span class="modeHint">Set this before generating, or any time after — it derives 3–8 documentation points from the captured UI structure and appends them to the document. Two versions produce a field-level comparison instead.</span>
   </div>
 
   <div class="columns">
@@ -292,9 +301,20 @@
     <button id="download" class="hidden">Download .docx</button>
   </div>
 
-  <div class="panel hidden" id="aiSummaryPanel">
-    <h2>AI Summary</h2>
-    <div id="aiSummaryBody"></div>
+  <div class="panel hidden" id="summaryPanel">
+    <h2>Summary</h2>
+    <div class="tabBar" role="tablist">
+      <button type="button" class="tabBtn" id="tabGeneral" role="tab"
+              aria-selected="true" aria-controls="generalSummaryBody">
+        General Summary<span class="tabDot" id="generalDot"></span>
+      </button>
+      <button type="button" class="tabBtn" id="tabAi" role="tab"
+              aria-selected="false" aria-controls="aiSummaryBody">
+        AI Summary<span class="tabDot" id="aiDot"></span>
+      </button>
+    </div>
+    <div class="summaryBody" id="generalSummaryBody" role="tabpanel" aria-labelledby="tabGeneral"></div>
+    <div class="summaryBody hidden" id="aiSummaryBody" role="tabpanel" aria-labelledby="tabAi"></div>
   </div>
 
   <div class="panel hidden" id="manualPanel">
@@ -349,7 +369,10 @@
     generate: $('generate'), status: $('status'),
     resultPanel: $('resultPanel'), resultNotice: $('resultNotice'),
     summaryTable: $('summaryTable'), download: $('download'),
-    aiSummaryToggle: $('aiSummaryToggle'), aiSummaryPanel: $('aiSummaryPanel'), aiSummaryBody: $('aiSummaryBody'),
+    summaryPanel: $('summaryPanel'),
+    tabGeneral: $('tabGeneral'), tabAi: $('tabAi'),
+    generalDot: $('generalDot'), aiDot: $('aiDot'),
+    generalSummaryBody: $('generalSummaryBody'), aiSummaryBody: $('aiSummaryBody'),
     logPanel: $('logPanel'), log: $('log'),
     authPanel: $('authPanel'), authHeading: $('authHeading'),
     authDetail: $('authDetail'), authOpenLive: $('authOpenLive'),
@@ -552,11 +575,12 @@
     els.download.classList.add('hidden');
     els.summaryTable.classList.add('hidden');
     els.resultNotice.innerHTML = '';
-    // Leave the toggle's checked state alone — it can be set before Generate
-    // is even clicked, and should carry into the new job. Just clear any
-    // summary left over from a previous job.
-    els.aiSummaryPanel.classList.add('hidden');
+    els.summaryPanel.classList.add('hidden');
+    els.generalSummaryBody.innerHTML = '';
     els.aiSummaryBody.innerHTML = '';
+    setTabDot(els.generalDot, '');
+    setTabDot(els.aiDot, '');
+    selectSummaryTab('general');
     els.logPanel.classList.remove('hidden');
     els.log.textContent = '';
     setStatus('Starting…', true);
@@ -1066,11 +1090,6 @@
           setStatus('Failed.');
           els.resultNotice.innerHTML =
             '<div class="notice err">' + escapeHtml(d.error || 'Unknown error') + '</div>';
-          if (els.aiSummaryToggle.checked) {
-            els.aiSummaryPanel.classList.remove('hidden');
-            els.aiSummaryBody.innerHTML =
-              '<div class="notice warn">No version was captured, so there is nothing to summarise.</div>';
-          }
           return;
         }
 
@@ -1097,9 +1116,8 @@
           els.download.onclick = () => {
             window.location.href = '/api/jobs/' + currentJob + '/document';
           };
-          // Toggle may have been set before Generate was even clicked — this
-          // is the first moment a document (and its runIds) actually exists.
-          maybeStartAiSummary();
+          // First moment a document (and its runIds) actually exists.
+          maybeStartSummaries();
         }
       } catch (e) {
         setStatus('Failed: ' + e.message);
@@ -1108,16 +1126,19 @@
     }, 1000);
   }
 
-  // --- AI Summary toggle -------------------------------------------------
-  // ON: sends the finished capture's full-page content to the router for a
-  // bullet-point summary (single version) or comparison (two versions).
-  // OFF: suppresses display; if never turned on for this job, nothing is
-  // generated at all — the backend only starts work when this fires.
+  // --- Summary tabs ------------------------------------------------------
+  // General Summary: the deterministic pipeline's objective output.
+  // AI Summary: the LLM's complete explanation of the captured system, with
+  // every claim already validated against real captured evidence server-side.
+  // Both are generated from the same request once a document exists.
 
   const CATEGORY_LABELS = {
     added: 'Added', removed: 'Removed', changed: 'Changed',
     structure: 'Structure', behavior: 'Behavior', state: 'State', unresolved: 'Unresolved',
   };
+  // Order the comparison sections read in: what appeared, what went away,
+  // what was reworked, then the wider structural/behavioural observations.
+  const CATEGORY_ORDER = ['added', 'removed', 'changed', 'behavior', 'state', 'structure', 'unresolved'];
   const OVERALL_LEVELS = {
     no_change: 'no-change', minor: 'minor', moderate: 'moderate', major: 'major',
   };
@@ -1128,116 +1149,192 @@
     major: 'Major structural change',
   };
 
-  function renderAiSummary(d) {
-    if (!els.aiSummaryToggle.checked) {
-      els.aiSummaryPanel.classList.add('hidden');
+  function selectSummaryTab(which) {
+    const ai = which === 'ai';
+    els.tabAi.setAttribute('aria-selected', String(ai));
+    els.tabGeneral.setAttribute('aria-selected', String(!ai));
+    els.aiSummaryBody.classList.toggle('hidden', !ai);
+    els.generalSummaryBody.classList.toggle('hidden', ai);
+  }
+
+  function setTabDot(dot, state) {
+    dot.className = 'tabDot' + (state ? ' ' + state : '');
+  }
+
+  els.tabGeneral.addEventListener('click', () => selectSummaryTab('general'));
+  els.tabAi.addEventListener('click', () => selectSummaryTab('ai'));
+
+  function spinnerLine(text) {
+    return '<div class="summaryMeta"><span class="spinner" style="margin-right:6px"></span>' +
+      escapeHtml(text) + '</div>';
+  }
+
+  function pointItem(p, withBadge) {
+    const isHigh = p.importance === 'high';
+    const cat = p.category || '';
+    const liClass = [isHigh ? 'high' : '', cat === 'unresolved' ? 'unresolved' : '']
+      .filter(Boolean).join(' ');
+    let badge = '';
+    if (withBadge && cat) {
+      badge = '<span class="catBadge cat-' + escapeHtml(cat) + '">' +
+        escapeHtml(CATEGORY_LABELS[cat] || cat) + '</span>';
+    }
+    return '<li class="' + liClass + '">' + badge + '<span>' + escapeHtml(p.text) + '</span></li>';
+  }
+
+  function overallBar(overallChange) {
+    if (!overallChange) return '';
+    const level = overallChange.level || 'no_change';
+    return '<div class="overallBar ' + (OVERALL_LEVELS[level] || 'no-change') + '">' +
+      '<strong>Overall:</strong> ' + escapeHtml(OVERALL_LABELS[level] || level) +
+      (overallChange.text ? ' — ' + escapeHtml(overallChange.text) : '') + '</div>';
+  }
+
+  /**
+   * Comparison mode groups its points into labelled Old→New sections so the
+   * whole change story reads in order, rather than as one undifferentiated
+   * list with a badge per row.
+   */
+  function renderComparison(result, meta) {
+    const byCat = new Map();
+    for (const p of result.points) {
+      const cat = p.category || 'structure';
+      if (!byCat.has(cat)) byCat.set(cat, []);
+      byCat.get(cat).push(p);
+    }
+    const cats = [...byCat.keys()].sort((a, b) => {
+      const ia = CATEGORY_ORDER.indexOf(a), ib = CATEGORY_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+
+    const groups = cats.map((cat) => {
+      const points = byCat.get(cat);
+      return '<div class="catGroup"><h3>' + escapeHtml(CATEGORY_LABELS[cat] || cat) +
+        ' <span class="catCount">(' + points.length + ')</span></h3><ul>' +
+        points.map((p) => pointItem(p, false)).join('') + '</ul></div>';
+    }).join('');
+
+    return '<div class="summaryMeta">' + escapeHtml(meta) + '</div>' + groups +
+      overallBar(result.overallChange);
+  }
+
+  function renderSummaryInto(el, result, meta, emptyText) {
+    if (!result || !result.points || result.points.length === 0) {
+      el.innerHTML = '<div class="summaryMeta">' + escapeHtml(emptyText) + '</div>';
       return;
     }
-    els.aiSummaryPanel.classList.remove('hidden');
+    if (result.type === 'comparison') {
+      el.innerHTML = renderComparison(result, meta);
+      return;
+    }
+    el.innerHTML = '<div class="summaryMeta">' + escapeHtml(meta) + '</div><ul>' +
+      result.points.map((p) => pointItem(p, false)).join('') + '</ul>';
+  }
+
+  function renderSummaries(d) {
+    els.summaryPanel.classList.remove('hidden');
+    const comparison = (d.aiSummary || d.generalSummary || {}).type === 'comparison';
+
+    // General tab — deterministic, independent of the AI call's outcome.
+    if (d.generalSummary) {
+      renderSummaryInto(
+        els.generalSummaryBody,
+        d.generalSummary,
+        comparison
+          ? 'Deterministic old-vs-new comparison, derived from captured structure.'
+          : 'Deterministic documentation points, derived from captured structure.',
+        'No documentable UI evidence was captured.',
+      );
+      setTabDot(els.generalDot, 'ok');
+    } else if (d.generalSummaryStatus === 'error') {
+      els.generalSummaryBody.innerHTML =
+        '<div class="notice err">' +
+        escapeHtml(d.generalSummaryError || 'General summary failed') + '</div>';
+      setTabDot(els.generalDot, 'err');
+    } else if (d.generalSummaryStatus === 'running') {
+      els.generalSummaryBody.innerHTML = spinnerLine('Deriving documentation points…');
+    } else if (d.aiSummaryStatus === 'done' || d.aiSummaryStatus === 'error') {
+      // Generation has settled but no General Summary ever arrived — almost
+      // always a server running code older than this page. Say so instead of
+      // spinning forever on a result that is not coming.
+      els.generalSummaryBody.innerHTML =
+        '<div class="notice warn">No General Summary was returned. If the server was started ' +
+        'before this feature was added, restart it and generate again.</div>';
+      setTabDot(els.generalDot, 'err');
+    } else {
+      els.generalSummaryBody.innerHTML = spinnerLine('Deriving documentation points…');
+    }
+
+    // AI tab.
     if (d.aiSummaryStatus === 'running' || !d.aiSummaryStatus) {
-      els.aiSummaryBody.innerHTML =
-        '<div class="aiSummaryMeta"><span class="spinner" style="margin-right:6px"></span>Generating…</div>';
+      els.aiSummaryBody.innerHTML = spinnerLine('Writing the AI explanation…');
       return;
     }
     if (d.aiSummaryStatus === 'error') {
       els.aiSummaryBody.innerHTML =
         '<div class="notice err">' + escapeHtml(d.aiSummaryError || 'AI summary failed') + '</div>';
+      setTabDot(els.aiDot, 'err');
       return;
     }
-
-    const ai = d.aiSummary;
-    if (!ai || !ai.points || ai.points.length === 0) {
-      els.aiSummaryBody.innerHTML = '<div class="aiSummaryMeta">No documentable UI evidence was captured.</div>';
-      return;
-    }
-
-    const isComparison = ai.type === 'comparison';
-    const meta = isComparison
-      ? 'Field-level comparison — old vs new'
-      : 'UI documentation points';
-
-    const items = ai.points.map((p) => {
-      const isHigh = p.importance === 'high';
-      const isUnresolved = p.category === 'unresolved';
-      const cat = p.category || '';
-      const liClass = [isHigh ? 'high' : '', isUnresolved ? 'unresolved' : ''].filter(Boolean).join(' ');
-
-      let badge = '';
-      if (isComparison && cat) {
-        const label = CATEGORY_LABELS[cat] || cat;
-        badge = '<span class="catBadge cat-' + escapeHtml(cat) + '">' + escapeHtml(label) + '</span>';
-      } else if (!isComparison && isHigh) {
-        badge = '<span class="catBadge cat-structure" style="border-color:var(--border);color:var(--muted)">Key</span>';
-      }
-
-      return '<li class="' + liClass + '">' + badge + '<span>' + escapeHtml(p.text) + '</span></li>';
-    }).join('');
-
-    let html = '<div class="aiSummaryMeta">' + escapeHtml(meta) + '</div><ul>' + items + '</ul>';
-
-    if (isComparison && ai.overallChange) {
-      const level = ai.overallChange.level || 'no_change';
-      const levelLabel = OVERALL_LABELS[level] || level;
-      const barClass = 'overallBar ' + (OVERALL_LEVELS[level] || 'no-change');
-      html += '<div class="' + barClass + '"><strong>Overall:</strong> ' +
-        escapeHtml(levelLabel) +
-        (ai.overallChange.text ? ' — ' + escapeHtml(ai.overallChange.text) : '') + '</div>';
-    }
-
-    els.aiSummaryBody.innerHTML = html;
+    renderSummaryInto(
+      els.aiSummaryBody,
+      d.aiSummary,
+      comparison
+        ? 'Complete old-to-new explanation of the captured system, evidence-checked.'
+        : 'Complete explanation of the captured system, evidence-checked.',
+      'No evidence-backed explanation could be produced.',
+    );
+    setTabDot(els.aiDot, 'ok');
   }
 
-  // Main job polling stops once the job is done; the AI summary can be
-  // triggered afterwards, so it gets its own short-lived poll loop.
-  function pollAiSummary() {
-    if (!currentJob || !els.aiSummaryToggle.checked) return;
+  // Main job polling stops once the job is done; summary generation runs
+  // afterwards, so it gets its own short-lived poll loop.
+  function pollSummaries() {
+    if (!currentJob) return;
     fetch('/api/jobs/' + currentJob)
       .then((r) => r.json())
       .then((d) => {
-        renderAiSummary(d);
-        if (d.aiSummaryStatus === 'running') setTimeout(pollAiSummary, 1200);
+        renderSummaries(d);
+        // Both tracks are independent, so keep polling until BOTH have
+        // settled — stopping on the AI status alone would strand the General
+        // tab whenever the deterministic pipeline finishes second.
+        if (d.aiSummaryStatus === 'running' || d.generalSummaryStatus === 'running') {
+          setTimeout(pollSummaries, 1200);
+        }
       })
-      .catch(() => setTimeout(pollAiSummary, 1200));
+      .catch(() => setTimeout(pollSummaries, 1200));
   }
 
-  // Can be checked before Generate is even clicked (there is no job yet), or
-  // any time after — either way it just remembers the preference here; the
-  // actual generation only starts once a document exists, from whichever of
-  // these two triggers happens second: the toggle turning on, or the job
-  // finishing (see `maybeStartAiSummary` call in `poll()`, above).
-  async function maybeStartAiSummary() {
-    if (!els.aiSummaryToggle.checked || !currentJob) return;
+  /**
+   * Kicks off both summaries once a document actually exists. Called from
+   * `poll()` the moment the job reports a finished document; the backend
+   * ignores repeat requests for a job already generating or generated.
+   */
+  async function maybeStartSummaries() {
+    if (!currentJob) return;
     let status;
     try {
       status = await (await fetch('/api/jobs/' + currentJob)).json();
     } catch {
-      return; // transient — the next trigger (poll(), or another toggle flip) will retry
+      return; // transient — poll() calls this again
     }
-    if (!status.hasDocument) return; // not ready yet — poll() calls this again once it is
+    if (!status.hasDocument) return; // not ready yet
 
-    els.aiSummaryPanel.classList.remove('hidden');
+    els.summaryPanel.classList.remove('hidden');
     if (!els.aiSummaryBody.innerHTML) {
-      els.aiSummaryBody.innerHTML =
-        '<div class="aiSummaryMeta"><span class="spinner" style="margin-right:6px"></span>Generating…</div>';
+      els.generalSummaryBody.innerHTML = spinnerLine('Deriving documentation points…');
+      els.aiSummaryBody.innerHTML = spinnerLine('Writing the AI explanation…');
     }
     try {
       const r = await fetch('/api/jobs/' + currentJob + '/ai-summary', { method: 'POST' });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || 'Could not start AI summary');
-      pollAiSummary();
+      if (!r.ok) throw new Error(d.error || 'Could not start summary generation');
+      pollSummaries();
     } catch (e) {
-      els.aiSummaryPanel.classList.remove('hidden');
       els.aiSummaryBody.innerHTML = '<div class="notice err">' + escapeHtml(e.message) + '</div>';
+      setTabDot(els.aiDot, 'err');
     }
   }
-
-  els.aiSummaryToggle.addEventListener('change', () => {
-    if (!els.aiSummaryToggle.checked) {
-      els.aiSummaryPanel.classList.add('hidden');
-      return;
-    }
-    maybeStartAiSummary();
-  });
 
   function escapeHtml(s) {
     return String(s).replace(/[<>&]/g, (c) =>

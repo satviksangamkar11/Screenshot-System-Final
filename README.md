@@ -1,6 +1,8 @@
 # UI Documentation Engine
 
-Automates a real browser against an enterprise web application (SAP Fiori / UI5 / FPM building blocks / `@ui5/webcomponents` / Web Dynpro ABAP / WebGUI), discovers every documentable control, interacts with it, captures screenshot evidence, and assembles a Word document. An optional deterministic **AI Summary** pass appends structured documentation points to the same `.docx` — no LLM calls, no API keys, zero external dependency.
+Automates a real browser against an enterprise web application (SAP Fiori / UI5 / FPM building blocks / `@ui5/webcomponents` / Web Dynpro ABAP / WebGUI), discovers every documentable control, interacts with it, captures screenshot evidence, and assembles a Word document. Two summaries are then produced from that same evidence: a deterministic **General Summary** and an LLM-written **AI Summary** whose every claim is validated against real captured evidence before it is shown.
+
+> **Structured evidence only — never pixels.** No vision model is used anywhere. The LLM receives the semantic model, derived facts, patterns and diff that this codebase already computed — never `trace.json` wholesale, never a screenshot.
 
 > **End users need nothing installed.** No Node.js, no Chrome/Edge, no account. Just open the hosted server's URL in whatever browser they already have. Node.js + a browser are required only on the **one machine that runs the server** — see [Requirements](#requirements).
 
@@ -12,8 +14,12 @@ Automates a real browser against an enterprise web application (SAP Fiori / UI5 
 - Talks to Chrome/Edge directly over the **Chrome DevTools Protocol** — no Playwright, no Puppeteer, no browser-binary download.
 - Five **technology adapters**, tried in priority order, each claiming the controls it recognizes: UI5 framework → `@ui5/webcomponents` → Web Dynpro ABAP → WebGUI/ITS → generic ARIA/DOM fallback.
 - A control becomes a **documentation point** only if interacting with it reveals something worth a screenshot (dropdown, calendar, lookup, checkbox, file upload, or a button that opens new UI) — plain text fields are filled but not separately screenshotted.
-- **AI Summary** is a fully deterministic pipeline (`src/doc-intelligence/`) — builds a structured model from the capture trace, derives facts, renders 3–8 TL;DR points. **No LLM, no vision model, no network call, no API key required.**
+- **Two summaries, two tabs.** *General Summary* — the deterministic pipeline (`src/doc-intelligence/`), zero network calls. *AI Summary* — an LLM explanation built from that same structured model, with every point's evidence citations validated server-side before display.
+- **Evidence-backed or dropped.** An AI point citing evidence that isn't in the capture is discarded, not shown. Unsupported claims never reach the document.
+- **Graceful degradation.** If no API key is set, every provider is down, or the response is malformed, the AI path falls back to the deterministic pipeline automatically. The document is never blocked by an LLM failure.
+- **Key rotation built in** — three Groq keys tried in order, then a Gemini fallback (`src/llm/client.ts`).
 - Runs as a **shared web server**: each browser gets its own cookie-isolated session, no cross-user leakage.
+- **Manual data-entry mode** — the operator fills each field themselves through a streamed live view, while the engine still handles discovery, screenshots and assembly.
 - Also runs from the **CLI** against a named `config/apps/<app>.yaml`, for repeatable/scripted captures.
 
 ---
@@ -40,17 +46,25 @@ pasted URL(s)           (web) ───┼──►  buildAppConfig
                                  ▼
                     output/jobs/<jobId>/<Title>.docx
                                  │
-                                 ▼ (optional, on request)
-                          ┌─────────────┐
-                          │ AI SUMMARY  │  deterministic — rebuilds the .docx with an
-                          │             │  appended section; src/doc-intelligence/
-                          └─────────────┘
+                                 ▼ (once a document exists)
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+          ┌──────────────────┐      ┌──────────────────┐
+          │ GENERAL SUMMARY  │      │   AI SUMMARY     │
+          │ deterministic    │      │ LLM + evidence   │
+          │ facts/diff       │      │ validation       │
+          │ (no network)     │      │ src/llm/         │
+          └──────────────────┘      └────────┬─────────┘
+                                             ▼
+                                  rebuilds the .docx with an
+                                  appended AI Summary section
 ```
 
 **Key properties:**
-- Capture and Assemble are fully decoupled — a trace can be re-assembled into a fresh `.docx` (formatting fixes, AI Summary added later) without repeating a slow capture run.
+- Capture and Assemble are fully decoupled — a trace can be re-assembled into a fresh `.docx` (formatting fixes, summaries added later) without repeating a slow capture run.
 - `trace.json` is the **only** contract between the two stages.
-- AI Summary reads the same trace(s) already on disk — it re-runs assembly with the summary appended, in place.
+- Both summaries read the same trace(s) already on disk — no re-capture, no browser.
+- **The two summary tracks are independent.** Each carries its own status, so a failed LLM call still leaves a fully populated General Summary.
 
 ---
 
@@ -91,10 +105,19 @@ pasted URL(s)           (web) ───┼──►  buildAppConfig
                                                           ▼
                                     document/builder.ts : buildDocument() → .docx
                                                           │
-                                                          ▼ (optional, user-triggered)
-                          doc-intelligence/index.ts : generateDocumentationPoints()
-                          → appended into the same .docx via assembleDocument() again
+                                                          ▼ (once the document exists)
+                     POST /api/jobs/:id/ai-summary → requestAiSummary()
+                                                          │
+                          ┌───────────────────────────────┴───────────────────────────────┐
+                          ▼                                                               ▼
+        generateDocumentationPoints()                            generateAiDocumentationPoints()
+        deterministic → job.generalSummary                       ai-context.ts → llm/client.ts
+                                                                 → validate refs → job.aiSummary
+                                                                 → appended into the same .docx
 ```
+
+Both tracks are started by one request and polled through the existing `GET /api/jobs/:id`
+status endpoint — `generalSummaryStatus` and `aiSummaryStatus` settle independently.
 
 ---
 
@@ -278,7 +301,7 @@ For controls that open an overlay, **the opened state is the evidence** — scre
 
 ---
 
-## 5. Container & Section Model (AI Summary input)
+## 5. Container & Section Model (summary input)
 
 TL;DR: discovery doesn't just find controls — it establishes **where** each one lives, and that identity survives all the way to the diff engine.
 
@@ -297,7 +320,19 @@ Page
 
 ---
 
-## 6. AI Summary — Deterministic Pipeline
+## 6. Summaries — General (Deterministic) and AI (LLM)
+
+The web UI shows both, side by side, as two tabs on one **Summary** panel:
+
+```
+┌─────────────────────────────────────┐
+│  General Summary   |   AI Summary   │
+└─────────────────────────────────────┘
+```
+
+Each tab carries its own status dot — grey (working) → green (ready) → red (failed) — because the two tracks succeed and fail independently.
+
+### 6.1 General Summary — deterministic
 
 **No LLM. No vision model. No network call. No API key.** Fully derived from the structured capture trace already on disk.
 
@@ -316,18 +351,66 @@ facts.ts           deriveFacts() — fixed relevance rules, single version
 diff.ts            diffModels() — old vs. new comparison (multiset matching, never positional)
         │
         ▼
-templates.ts       renderSinglePoints() — facts → 3–8 TL;DR bullets, HIGH-first, deduplicated
-        │
-        ▼
-appended into the .docx via assembleDocument(), in place
+templates.ts       renderSinglePoints() — facts → TL;DR bullets, HIGH-first, deduplicated
 ```
 
-- **Single version** → 3–8 documentation points about structure, patterns, and interaction behavior.
+- **Single version** → documentation points about structure, patterns, and interaction behavior.
 - **Two versions** → categorised change points (`ADDED` / `REMOVED` / `CHANGED` / `COMPOSITION_CHANGE` / `UNRESOLVED` / capability / pattern), plus an overall change level (`no_change` / `minor` / `moderate` / `major`).
 - **Multiset matching, never positional**: sections/containers/controls are matched by `kind + label` across two captures — never paired by list position. A 1:1 match is `CONFIRMED`; an N:M mismatch is `COMPOSITION_CHANGE`; a section with zero defensible correspondence is `UNRESOLVED` — an honest "can't tell" answer, not a guess.
 - **Junk labels don't delete nodes.** A meaningless label (`"."`, a bare icon) anonymizes the node — it's still counted structurally, just excluded from named facts.
-- Toggle in the web UI: **AI Summary**. Optional — off by default, failure never blocks the main document.
-- `AiPoint` / `AiSummaryResult` (the shared render contract) are defined in `doc-intelligence/index.ts` itself and consumed by `document/builder.ts`, `orchestrator/assemble.ts`, and `server/jobs.ts`.
+
+### 6.2 AI Summary — LLM over structured evidence
+
+The same deterministic model is bundled into an **AI context** and sent to an LLM for a complete, readable explanation. Screenshots are never sent; `trace.json` is never sent wholesale.
+
+```
+UiDocumentationModel + facts + patterns + diff
+        │
+        ▼
+ai-context.ts      builds the context + an evidence catalog the model may cite
+        │            single mode:     seq numbers        (e.g. 12)
+        │            comparison mode: namespaced refs    (e.g. "old:12", "new:7")
+        ▼
+llm/client.ts      Groq (key rotation) → Gemini fallback
+        │
+        ▼
+ai-summary.ts      parse JSON → validate every cited ref against the catalog
+        │            a point citing nothing valid is DROPPED, not shown
+        ▼
+AiSummaryResult    → rendered in the AI Summary tab + appended into the .docx
+```
+
+**What the AI tab adds over the General tab** — same capture, real output:
+
+| General Summary | AI Summary |
+|---|---|
+| `Form · General section was added.` | `The Form → General section was added, containing fields like Due Date and RFA Reason.` |
+
+- **Comparison mode** groups points into ordered sections — `ADDED` / `REMOVED` / `CHANGED` / `BEHAVIOR` / `STATE` / `STRUCTURE` / `UNRESOLVED` — each with a count, plus the overall-change bar. The whole old→new story reads in order rather than as one flat list.
+- **Evidence validation is the safety net.** Points are accepted only if their `evidenceRefs` resolve against the catalog built from the actual capture. This is what makes the output checkable rather than plausible-sounding.
+- **Fallback is automatic.** No keys configured, every provider failing, malformed JSON, or zero surviving points → the deterministic pipeline's result is returned instead, and the reason is logged.
+
+### 6.3 LLM client — `src/llm/client.ts`
+
+The single place in the codebase that talks to an LLM API. Any future feature needing one should import `chatComplete` rather than adding provider code of its own.
+
+| Env var | Role |
+|---|---|
+| `GROQ_API_KEY` | Primary |
+| `GROQ_API_KEY_2` | Rotated to on auth / rate-limit / server errors |
+| `GROQ_API_KEY_3` | Rotated to next |
+| `GEMINI_API_KEY` | Fallback once every Groq key is exhausted |
+| `GROQ_MODEL` | Optional model override (default `openai/gpt-oss-120b`) |
+| `GEMINI_MODEL` | Optional model override (default `gemini-3.6-flash`) |
+
+- **Rotation is selective.** `401` / `403` / `429` / `5xx` rotate to the next key. A `404` (retired model id) does **not** — another key cannot fix a bad model name, so it fails fast instead of burning all three keys.
+- **Model ids are env-overridable** because providers retire them regularly; that should be a config edit, not a code change.
+- **Reasoning-model aware.** Groq's `gpt-oss` models spend reasoning tokens from the same `max_tokens` budget before emitting any content, so a tight cap silently returns empty output. The client uses a generous budget with `reasoning_effort: 'low'`.
+- `.env` is loaded by a small built-in parser in `config/load.ts` — no `dotenv` dependency. Real environment variables always win over `.env` values.
+
+### 6.4 Shared contract
+
+`AiPoint` / `AiSummaryResult` (the shared render contract) are defined in `doc-intelligence/index.ts` and consumed by `document/builder.ts`, `orchestrator/assemble.ts`, and `server/jobs.ts`. The **AI** summary is what gets appended into the `.docx`.
 
 ---
 
@@ -436,19 +519,55 @@ All core types in **`src/types.ts`**; the AI Summary layer's own model in `src/d
 ```
 src/server/
 ├── app.ts            HTTP routes + static file serving
-├── jobs.ts            job lifecycle: sign-in orchestration, capture, assemble, AI Summary trigger
+├── jobs.ts            job lifecycle: sign-in orchestration, capture, assemble, summary tracks
 ├── adhoc.ts            builds an AppConfig from pasted URL(s) — no YAML file needed
 ├── remoteControl.ts    CDP screencast + input forwarding (live view during sign-in / manual mode)
 ├── userId.ts           per-browser cookie identity — session isolation on a shared server
 └── public/
-    ├── index.html       the SPA: URL form, mode toggle, AI Summary toggle, live view, log panel
+    ├── index.html       the SPA: URL form, mode toggle, Summary tabs, live view, log panel
     └── live.html         standalone full-tab live view page
 ```
+
+**Job status payload** (`GET /api/jobs/:id`) — the summary-relevant fields:
+
+| Field | Meaning |
+|---|---|
+| `generalSummaryStatus` / `generalSummary` / `generalSummaryError` | Deterministic track |
+| `aiSummaryStatus` / `aiSummary` / `aiSummaryError` | LLM track |
+
+The client polls until **both** report a settled state. Polling on one status alone would strand the other tab whenever it finished second.
 
 - **Each browser gets its own session** — first request sets an opaque `HttpOnly` id cookie; every saved-session path is namespaced under it (`auth/.storage/<id>/<origin>.json`). Two people on the same shared server never see each other's SAP sessions.
 - **Sign-in handled automatically** — the engine probes headlessly whether a site needs sign-in; if so, a live view streams into the page and the engine waits.
 - URLs can be prefilled: `http://localhost:5173/?old=<encoded>&new=<encoded>`.
 - Progress log distinguishes **positive confirmations** (green — "captured X") from **warnings** (amber) and **errors** (red) — a normal run should read as mostly green, not an unbroken stream of amber skip lines.
+
+### 10.1 Data-entry modes
+
+| Mode | Who fills the fields | When to use |
+|---|---|---|
+| **Automatic** *(default)* | The engine, from `config/testdata.yaml` rules | Normal runs — unattended, fastest |
+| **Manual** | The operator, by hand in the live view | Fields needing real, valid business data the engine can't invent (customer numbers, contract ids) |
+
+In **Manual** mode the engine still does everything else — discovery, interaction sequencing, screenshots, exception recording, assembly. It pauses at each discovered control and waits for the operator to **Submit** (accept what they typed) or **Skip**. The pending queue and the currently-waiting control are streamed to the page, so the operator always sees what is being asked of them.
+
+Both modes capture the same overlay evidence at open time, so a document produced in Manual mode is structurally identical to an Automatic one.
+
+### 10.2 Live view
+
+A **CDP screencast** of the real browser, streamed into the page (`remoteControl.ts`), used in two situations:
+
+- **Sign-in** — the engine probes headlessly whether a site needs authentication; if it does, the live view opens and the engine waits for the operator to sign in. The session is then saved and reused.
+- **Manual mode** — the operator watches and types directly into the streamed page.
+
+Input is forwarded back to the browser: keyboard (including modifier combinations), mouse, and scrolling. The view can be popped out to its own tab at `/live/jobs/<jobId>` (`live.html`) when the inline panel is too small.
+
+### 10.3 Session isolation and re-authentication
+
+- Sessions are stored **per origin, per browser identity** — two versions on the same host require only one sign-in.
+- Every sign-in completes **before any capture starts**, so a run never stalls halfway waiting for a human.
+- If a saved session has silently expired, the capture raises a `SessionError`; the engine reopens sign-in once, then retries that version automatically.
+- A version whose sign-in never completes is **skipped, not fatal** — the remaining versions are still documented, and the UI reports which one was left out.
 
 ---
 
@@ -481,9 +600,11 @@ Or all in one go: `npm run run -- --app <app>`
 |---|---|
 | **Node.js ≥ 20** | Runs the engine and the web server |
 | **Google Chrome _or_ Microsoft Edge** | Driven directly over CDP — no browser download step |
+| **An LLM API key** *(optional)* | Only for the AI Summary tab. Without one, the General Summary still works and the AI tab falls back to it. |
 
 - Edge is Chromium-based and speaks the same protocol — a stock Windows machine with no Chrome works unchanged.
 - Nothing else needed — no ChromeDriver, no Playwright/Puppeteer binaries, no Docker.
+- No LLM **SDK** dependency either — the client uses Node's built-in `fetch` against the providers' HTTP APIs.
 - The served web page itself has **zero external dependencies** (no CDN scripts, no fonts) — end users need nothing beyond a browser.
 
 ---
@@ -519,11 +640,22 @@ New-NetFirewallRule -DisplayName "UI Documentation Engine (port 5173)" `
 | `config/apps/<app>.yaml` | URLs, safety policy, budgets, per-app overrides — **CLI runs only** | `config/load.ts` |
 | `config/lexicon.yaml` | Canonical label names (optional) | `config/load.ts` |
 | `config/testdata.yaml` | Dummy values by label / by control kind (optional) | `config/load.ts` |
+| `.env` | LLM API keys + optional model overrides — **AI Summary only** | `config/load.ts` |
 
 - The **web UI never reads YAML** — `server/adhoc.ts` builds an `AppConfig` in-memory from pasted URLs.
 - Dates support `today` and relative offsets (`+30d`, `-1m`, `+1y`), and ranges (`today..+30d`).
 - Value-help fields intentionally have no dummy value — the engine opens the lookup and selects a real row.
-- **No API keys, no `.env` file needed for anything** — AI Summary is fully deterministic (§6).
+- **Capture needs no API key at all.** `.env` affects only the AI Summary tab (§6.3); everything else runs offline.
+
+```bash
+# .env — all optional; omit entirely to run deterministic-only
+GROQ_API_KEY=
+GROQ_API_KEY_2=
+GROQ_API_KEY_3=
+GEMINI_API_KEY=
+```
+
+`.env` is gitignored — keys never travel with the repository.
 
 ---
 
@@ -538,6 +670,12 @@ New-NetFirewallRule -DisplayName "UI Documentation Engine (port 5173)" `
 | Picker doesn't open on a web component | `shadowPierceOrF4` falls back to F4 — confirm the focused element accepts it; a fully custom mechanism may need a new case in `open-overlay.ts` |
 | Points appear that shouldn't, or vice versa | Use `excludeLabels` to drop a structurally-interactive control that isn't a meaningful point |
 | A page's sidebar consumes the whole run touring unrelated content | Known open gap (§8.7) — not shell chrome, a genuine content-navigation scoping problem |
+| **General Summary tab empty / says no summary was returned** | The server is running code older than the page. `index.html` is read from disk per request, but `jobs.ts`/`app.ts` live in the running process — **restart the server** |
+| **AI Summary reads identically to General Summary** | The LLM path fell back to deterministic. Check the server log for the reason — usually no key set, or every provider failing |
+| **AI Summary tab shows an error** | Read the message: `No LLM API keys configured` (set `.env`), or `All LLM providers failed:` followed by each provider's own error |
+| `Groq 404: model ... does not exist` | The default model id was retired. Set `GROQ_MODEL` in `.env` to a currently-served model |
+| `Gemini 429: prepayment credits are depleted` | The Gemini fallback key has no billing credit — either top it up or rely on Groq |
+| AI Summary returns fewer points than expected | Points whose evidence citations failed validation were dropped on purpose (§6.2) — the capture may simply hold little documentable evidence |
 
 ---
 

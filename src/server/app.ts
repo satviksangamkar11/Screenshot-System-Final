@@ -261,10 +261,13 @@ async function handle(
       aiSummaryStatus: job.aiSummaryStatus ?? null,
       aiSummary: job.aiSummary ?? null,
       aiSummaryError: job.aiSummaryError ?? null,
+      generalSummaryStatus: job.generalSummaryStatus ?? null,
+      generalSummary: job.generalSummary ?? null,
+      generalSummaryError: job.generalSummaryError ?? null,
     });
   }
 
-  // --- AI summary: turned on by the frontend's "AI Summary" toggle ----------
+  // --- Summary generation: drives the General Summary / AI Summary tabs -----
   const aiSummaryMatch = /^\/api\/jobs\/([a-z0-9-]+)\/ai-summary$/i.exec(route);
   if (req.method === 'POST' && aiSummaryMatch) {
     const result = requestAiSummary(aiSummaryMatch[1]!);

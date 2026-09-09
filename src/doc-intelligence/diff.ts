@@ -345,11 +345,11 @@ function sectionMatchesToPoints(matches: SectionMatch[]): DiffPoint[] {
     }
     if (m.state === 'CONFIRMED') {
       if (!m.old && m.new) {
-        const name = m.new.meaningfulLabel ? m.new.canonicalLabel : 'An unnamed section';
-        points.push({ category: 'added', text: `${name} section was added.`, importance: 'high' });
+        const name = m.new.meaningfulLabel ? `${m.new.canonicalLabel} section` : 'An unnamed section';
+        points.push({ category: 'added', text: `${name} was added.`, importance: 'high' });
       } else if (m.old && !m.new) {
-        const name = m.old.meaningfulLabel ? m.old.canonicalLabel : 'An unnamed section';
-        points.push({ category: 'removed', text: `${name} section was removed.`, importance: 'high' });
+        const name = m.old.meaningfulLabel ? `${m.old.canonicalLabel} section` : 'An unnamed section';
+        points.push({ category: 'removed', text: `${name} was removed.`, importance: 'high' });
       } else if (m.old && m.new) {
         const sectionName = m.new.meaningfulLabel ? m.new.canonicalLabel : 'unnamed section';
         // Step 13: capability diff (high-level section capability gains/losses).

@@ -10,7 +10,11 @@ import type { AppConfig } from '../config/schema.js';
 import type { VersionId } from '../types.js';
 import { addLogSink, log } from '../util/logger.js';
 import { InMemoryManualGate, type ManualQueueItem } from '../state/manualGate.js';
-import { generateDocumentationPoints, type AiSummaryResult } from '../doc-intelligence/index.js';
+import {
+  generateAiDocumentationPoints,
+  generateDocumentationPoints,
+  type AiSummaryResult,
+} from '../doc-intelligence/index.js';
 import { RemoteControl } from './remoteControl.js';
 import {
   buildAdHocConfig,
@@ -80,10 +84,20 @@ export interface Job {
   }[];
   /** Capture run id per version, kept for the AI Summary feature (jobs.ts) — the document itself no longer needs these once written. */
   runIds?: Partial<Record<VersionId, string>>;
-  /** Set only once the "AI Summary" toggle has actually been requested; absent means it was never asked for. */
+  /** Set only once summary generation has actually been requested; absent means it was never asked for. */
   aiSummaryStatus?: 'running' | 'done' | 'error';
   aiSummary?: AiSummaryResult;
   aiSummaryError?: string;
+  /**
+   * The deterministic pipeline's own output, generated alongside `aiSummary`
+   * so the UI can show both side by side ("General Summary" / "AI Summary").
+   * Independent of the AI path: it is still produced when the LLM call fails,
+   * and carries its own status so the client can tell "still working" apart
+   * from "failed" instead of waiting on a result that will never arrive.
+   */
+  generalSummaryStatus?: 'running' | 'done' | 'error';
+  generalSummary?: AiSummaryResult;
+  generalSummaryError?: string;
   startedAt: number;
   finishedAt?: number;
 }
@@ -435,10 +449,14 @@ export function startStandaloneLogin(url: string, userId?: string): string {
 }
 
 /**
- * Starts AI Summary generation for a finished job, if it hasn't been started
- * already (the toggle can fire more than once — e.g. the client re-sends on
- * reconnect — and generation is not cheap or idempotent-safe to repeat).
- * Callers read the result off the job via the existing status poll, the same
+ * Starts summary generation for a finished job, if it hasn't been started
+ * already (the client can fire this more than once — e.g. on reconnect — and
+ * generation is not cheap or idempotent-safe to repeat).
+ *
+ * Produces both summaries the UI's two tabs need: the deterministic
+ * "General Summary" and the LLM-written "AI Summary". They run concurrently
+ * and independently, so a failed LLM call still leaves a usable General tab.
+ * Callers read both off the job via the existing status poll, the same
  * pattern the rest of this file uses for everything else long-running.
  */
 export function requestAiSummary(jobId: string): { ok: true } | { ok: false; error: string } {
@@ -454,7 +472,25 @@ export function requestAiSummary(jobId: string): { ok: true } | { ok: false; err
   job.aiSummaryStatus = 'running';
   job.aiSummaryError = undefined;
 
+  // Deterministic summary runs on its own track — the General tab must not
+  // depend on the LLM call succeeding. A failure here has to reach the client
+  // as an error state; logging it server-side only would leave the tab
+  // waiting forever on a result that is never coming.
+  job.generalSummaryStatus = 'running';
+  job.generalSummaryError = undefined;
   generateDocumentationPoints(job.runIds)
+    .then((general) => {
+      job.generalSummary = general;
+      job.generalSummaryStatus = 'done';
+    })
+    .catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      job.generalSummaryStatus = 'error';
+      job.generalSummaryError = message;
+      log.warn(`Could not build General Summary: ${message}`);
+    });
+
+  generateAiDocumentationPoints(job.runIds)
     .then(async (result) => {
       job.aiSummary = result;
       // Rebuild the document with the AI summary appended at the end.
